@@ -36,6 +36,9 @@ output: html_document
 - Phylogenetic Tree with Present Absence dots
 
 
-```{r setup, include=FALSE}
+```{r setup}
+library(data.table)
+
+caprAcc <- fread("~/Data/CAPR_Collections_Search_Results2019-06-03.csv")
 
 ```
