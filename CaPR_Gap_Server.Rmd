@@ -8,24 +8,28 @@ output: html_document
 
 1) Making sure we have all the data from all the sources 
 * Potential additional data sources: NLGRP, Desert Botanical Garden, Berry Seed Bank
-	+ *NLGRP*: Wrote to them on 5/31/19 (follow up from another request early in May). Seems like it might happen by early  July. Should be able to get historical data from GRIN database (not sure what time frame this covers)
-	+ *Desert*: Katie contacted Kim McCue 6/1/19
-	+ *Berry*: Katie contacted Kris Freitag 6/1/19
+	+ **NLGRP**: Wrote to them on 5/31/19 (follow up from another request early in May). Seems like it might happen by early  July. Should be able to get historical data from GRIN database (not sure what time frame this covers)
+	+ **Desert**: Katie contacted Kim McCue 6/1/19
+	+ **Berry**: Katie contacted Kris Freitag 6/1/19
+
 2) Data clean up & addition 
 - Add cnddb EOs in addition to indicies
 - Add Regoinal Parks Species level accessions
 - Add seed counts where don't exist
 - Standardize provenance codes
 - Genetic Samples? 
+
 3) Categorizing Collections: 
 - Level 1: 5 Populations Collected by Maternal Lines & 3000 seeds/accessions
 - Level 2: 1-4 Populations Collected by Maternal Lines & variable seed counts
 - Level 3: Bulk Seed Collections (Any number)
 - Level 4: Wild Provenance Living Collections
 - Level 5: Any type of living collections
+
 4) Matching tree
 - Using R PhylomakR for first pass at tree at signal in collections
 - Then can build tree later this summer using the published phylogenetic data
+
 5) Visualizations for next meeting 
 - Venn Diagrams similar to Andrew Moonies talk
 	+Groups: Maternal Lines, Bulked Seed, Living Collections
