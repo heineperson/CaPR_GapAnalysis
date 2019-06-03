@@ -1,0 +1,42 @@
+---
+title: "Gap Analysis Tasks before Next Meeting"
+author: "Katie Heineman"
+date: "6/3/2019"
+output: html_document
+---
+# Tasks
+
+## Making sure we have all the data from all the sources 
+* Potential additional data sources: NLGRP, Desert Botanical Garden, Berry Seed Bank
+	+ **NLGRP**: Wrote to them on 5/31/19 (follow up from another request early in May). Seems like it might happen by early  July. Should be able to get historical data from GRIN database (not sure what time frame this covers)
+	+ **Desert**: Katie contacted Kim McCue 6/3/19
+	+ **Berry**: Katie contacted Kris Freitag 6/3/19
+	+ **Regoinal Parks**: Add species list - perhaps ask nicely for accessions again (last request Feb)
+
+## Data clean up & add fields where necessary 
+- Add seed counts where don't exist, ask people again
+- Standardize maternal lines vs. bulk
+- Standardize provenance codes
+- Y/N field for Genetic Samples? Who does this?
+
+## Categorizing Collections: 
+- Level 1: 5 Populations Collected by Maternal Lines & 3000 seeds/accessions
+- Level 2: 1-4 Populations Collected by Maternal Lines & variable seed counts
+- Level 3: Bulk Seed Collections (Any number)
+- Level 4: Wild Provenance Living Collections
+- Level 5: Any type of living collections
+- Maybe there needs to be multiple things to score it on? Example categories: Number of seed, Number of populations, Proportion of Ecoregions represented, Demonstrated ability to grow out (perhaps the benefit of including living collections)
+
+## Phylogenetic Matching
+- Using R PhylomakR for first pass at tree at signal in collections
+- Then can build tree later this summer using the published phylogenetic data
+
+## Spatial Analysis
+- Use land ownership layers and/or CNDDB land use designations
+- Calculate distance of each population from CaPR institution. If we control for distance, how does land ownership affect the probability of collection?  
+
+## Visualizations for next meeting 
+- Venn Diagrams similar to Andrew Moonies talk
+	+Groups: Level 1, Level 2, Level 3, Level 4, Level 5
+- Phylogenetic Tree with Present Absence dots (similar to phylogentic shiny app)
+
