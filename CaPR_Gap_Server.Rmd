@@ -1,5 +1,5 @@
 ---
-title: "Gap Analysis June 2019 Second"
+title: "Gap Analysis June 2019"
 author: "Katie Heineman"
 date: "6/3/2019"
 output: html_document
@@ -9,8 +9,8 @@ output: html_document
 1) Making sure we have all the data from all the sources 
 * Potential additional data sources: NLGRP, Desert Botanical Garden, Berry Seed Bank
 	+ **NLGRP**: Wrote to them on 5/31/19 (follow up from another request early in May). Seems like it might happen by early  July. Should be able to get historical data from GRIN database (not sure what time frame this covers)
-	+ **Desert**: Katie contacted Kim McCue 6/1/19
-	+ **Berry**: Katie contacted Kris Freitag 6/1/19
+	+ **Desert**: Katie contacted Kim McCue 6/3/19
+	+ **Berry**: Katie contacted Kris Freitag 6/3/19
 
 2) Data clean up & addition 
 - Add cnddb EOs in addition to indicies
@@ -39,6 +39,6 @@ output: html_document
 ```{r setup}
 library(data.table)
 
-caprAcc <- fread("~/Data/CAPR_Collections_Search_Results2019-06-03.csv")
+caprAcc <- fread("Data/CAPR_Collections_Search_Results2019-06-03.csv")
 
 ```
