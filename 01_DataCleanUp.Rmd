@@ -22,8 +22,9 @@ data <- fread("Data/CAPR_Collections_Search_Results2019-06-03.csv",na.strings=c(
 data[(`Seed Count`=='' | is.na(`Seed Count`) )& `Collection Type`=="Seed", .(Count=.N),by=c("Primary Seed Bank")]
 ```
 
-*UCSC* - Seed counts are no where in the UCSC freezer storage records sent in 2018. I have had a hard time reaching them about this recently
-*UCB* - 
+*UCSC* - Seed counts are no where in the UCSC freezer storage records sent in 2018. I should reach out to them again, and see if most of these records are represented in Rancho's database eventually.
+*UCB* - I have the seed counts for the 2018 data from UCB, but the accession up to July 2017 seem to have this info in the comments (perhaps maternal lines too) I can make a pass at programming this. Side note, I probably need to ask Vanessa for a full accessions print out bc I might be miss a few things from the second half of July 2018 
+
 
 
 
