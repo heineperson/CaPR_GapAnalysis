@@ -8,6 +8,11 @@ output: html_document
 change
 ```{r setup, include=FALSE}
 library(data.table)
+data <- fread("Data/CAPR_Collections_Search_Results2019-06-03.csv")
+
+# How many rare plants in San Diego County
+
+data[grepl("1B",`CNPS Rank`) & `Primary Seed Bank`=="SDZG",.(Count=uniqueN(`Taxon Name (Jepson)`))]
 ```
 
 ## R Markdown
