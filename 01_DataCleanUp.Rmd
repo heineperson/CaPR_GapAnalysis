@@ -4,8 +4,26 @@ author: "Katie Heineman"
 date: "6/3/2019"
 output: html_document
 ---
-# Purposes
+# Purpose
+
+Cleaning up data for gap analysis
+
+# Data Import
 ```{r setup, include=FALSE}
 library(data.table)
-data <- fread("Data/CAPR_Collections_Search_Results2019-06-03.csv")
+# Report from Web
+data <- fread("Data/CAPR_Collections_Search_Results2019-06-03.csv",na.strings=c("",NULL,NA))
+
+```
+
+# Evaluate missingness of seed counts
+
+```{r seed counts}
+data[(`Seed Count`=='' | is.na(`Seed Count`) )& `Collection Type`=="Seed", .(Count=.N),by=c("Primary Seed Bank")]
+```
+
+*UCSC* - Seed counts are no where in the UCSC freezer storage records sent in 2018. I have had a hard time reaching them about this recently
+*UCB* - 
+
+
 
