@@ -59,6 +59,13 @@ GenNa[!(Family%in%genusTable$family)][order(Family)]
 # Making a few fixes to these famileis
 GenNa[Family=="Agavaceae", Family:="Asparagacaeae"]
 GenNa[Family=="Chenopodiaceae", Family:="Amaranthaceae"]
-GenNa[!(Family%in%genusTable$family) & is.na(Family),Family:="FernOrNonVascular"]
+GenNa[!(Family%in%genusTable$family),Family:="FernOrNonVascular"]
 
+# Making a few fixes to genera
+
+
+# Update familes in the mega tree list
+setkey(Spp, genus)
+setkey(GenNa, genus)
+Spp[GenNa,`:=` (genus = i.genus,family=i.Family)]
 ```
