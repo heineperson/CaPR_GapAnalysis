@@ -5,12 +5,60 @@ date: "6/17/2019"
 output: html_document
 ---
 
+# Setting up Data
 ```{r dataimport}
 library(data.table)
+library(stringr)
+library(readr)
+
+# Capitlize first letter of string
+firstup <- function(x) {
+  substr(x, 1, 1) <- toupper(substr(x, 1, 1))
+  x
+}
 
 data <- fread("Data/CAPR_Collections_Search_Results2019-06-03.csv")
+data[,genus:=word(`Taxon Name (Jepson)`,1,1)]
 ```
 
+# Matching Genera and Families to Angiosperm Mega tree
 ```{r phylogenetic tree building}
+## Practice using the tool with example data
+# Source the code from Qian & Jin 2016 paper
+source("R_codes for S.PhyloMaker.R")
+# Read in the example list
+# example_splist <- na.omit(as.data.frame(read_delim("example.splist.csv", "\t", escape_double = FALSE, trim_ws = TRUE)))
+# # Read in the megaphylogeny
+ phylo<-read.tree("Data/PhytoPhylo.tre") # read in the megaphylogeny.
+ nodes <- as.data.table(read_delim("Data/nodes.csv", "\t", escape_double = FALSE,  trim_ws = TRUE))
+ 
+## Making species list for CaPR species
+Spp <- data[,.(Count=.N),by="Taxon Name (Jepson)"]
+Spp[,genus:=word(`Taxon Name (Jepson)`,1,1),by="Taxon Name (Jepson)"]
+
+## Finding Family's from genera from phylomaker Nodes file
+genusTable = nodes[,.(family=family[1]),by="genus"]
+
+## Merge megatree families onto genera
+Spp <- merge(Spp,genusTable,by="genus",all.x=T)
+#Spp[genus=="Eremanthus", family:="Asteraceae"]
+setnames(Spp,"Taxon Name (Jepson)","species")
+Spp <- Spp[,.(species,genus,family)]
+
+# Which genera weren't matched in the mega tree
+GenNa <- Spp[is.na(family),.(Count=.N),by="genus"]
+JepFam <- data[,.(Count=.N),by=c("Family","genus")]
+# Adding families to genera that weren't matched in the super tree
+GenNa <- merge(GenNa,JepFam, by="genus")
+GenNa[,Count.x:=NULL]
+GenNa[,Count.y:=NULL]
+GenNa[,Family:=firstup(tolower(Family))]
+# Checking which families in the CaPR list are not in the super tree
+GenNa[!(Family%in%genusTable$family)][order(Family)]
+
+# Making a few fixes to these famileis
+GenNa[Family=="Agavaceae", Family:="Asparagacaeae"]
+GenNa[Family=="Chenopodiaceae", Family:="Amaranthaceae"]
+GenNa[!(Family%in%genusTable$family) & is.na(Family),Family:="FernOrNonVascular"]
 
 ```
