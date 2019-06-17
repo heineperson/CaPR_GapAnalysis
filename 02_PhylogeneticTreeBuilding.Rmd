@@ -1,0 +1,16 @@
+---
+title: "02_PhyogeneticTreeBuilding"
+author: "Katie Heineman"
+date: "6/17/2019"
+output: html_document
+---
+
+```{r dataimport}
+library(data.table)
+
+data <- fread("Data/CAPR_Collections_Search_Results2019-06-03.csv")
+```
+
+```{r phylogenetic tree building}
+
+```
