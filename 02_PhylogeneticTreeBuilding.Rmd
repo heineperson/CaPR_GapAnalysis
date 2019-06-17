@@ -62,6 +62,17 @@ GenNa[Family=="Chenopodiaceae", Family:="Amaranthaceae"]
 GenNa[!(Family%in%genusTable$family),Family:="FernOrNonVascular"]
 
 # Making a few fixes to genera
+GenNa[genus=="Atrichoseris", genus:="Malacothrix"]
+GenNa[genus=="Aristocapsa", genus:="Chorizanthe"]
+GenNa[genus=="Benitoa", genus:="Lessingia"]
+GenNa[genus=="Bergerocactus", genus:="Cereus"]
+GenNa[genus=="Calliscirpus", genus:="Scirpus"]
+GenNa[genus=="Callitropsis", genus:="Cupressus"]
+GenNa[genus=="Carlquistia", genus:="Raillardella"]
+GenNa[genus=="Carsonia", genus:="Cleome"]
+GenNa[genus=="Cascadia", genus:="Saxifraga"]
+
+GenNa[genus=="Cascadia", genus:="Saxifraga"]
 
 
 # Update familes in the mega tree list
