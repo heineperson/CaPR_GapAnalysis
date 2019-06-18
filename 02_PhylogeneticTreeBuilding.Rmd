@@ -21,7 +21,7 @@ data <- fread("Data/CAPR_Collections_Search_Results2019-06-03.csv")
 data[,genus:=word(`Taxon Name (Jepson)`,1,1)]
 ```
 
-# Matching Genera and Families to Angiosperm Mega tree
+# Matching Genera and Families to Angiosperm Mega Tree
 ```{r phylogenetic tree building}
 ## Practice using the tool with example data
 # Source the code from Qian & Jin 2016 paper
@@ -114,8 +114,32 @@ GenNa[genus=="Leucosyris", genus:="Machaeranthera"]
 GenNa[genus=="Listera", genus:="Neottia"]
 GenNa[genus=="Malvella", genus:="Sida"]
 GenNa[genus=="Maurandella", genus:="Maurandya"]
+GenNa[genus=="Micromonolepis", genus:="Monolepis"]
+GenNa[genus=="Mitellastra", genus:="Mitella"]
+GenNa[genus=="Mucronea", genus:="Chorizanthe"]
+GenNa[genus=="Munroa", genus:="Crypsis"]
+GenNa[genus=="Munzothamnus", genus:="Stephanomeria"]
+GenNa[genus=="Neoholmgrenia", genus:="Camissonia"]
+GenNa[genus=="Noccaea", genus:="Thlaspi"]
+GenNa[genus=="Oreocarya", genus:="Cryptantha"]
+GenNa[genus=="Oreostemma", genus:="Aster"]
+GenNa[genus=="Osmadenia", genus:="Calycadenia"]
+GenNa[genus=="Oxytheca", genus:="Eriogonum"]
+GenNa[genus=="Pediomelum", genus:="Psoralea"]
+GenNa[genus=="Pentachaeta", genus:="Chaetopappa"]
+GenNa[genus=="Picradeniopsis", genus:="Bahia"]
+GenNa[genus=="Piperia", genus:="Platanthera"]
+GenNa[genus=="Pityopus", genus:="Monotropa"]
+GenNa[genus=="Pleurocoronis", genus:="Hofmeisteria"]
+GenNa[genus=="Podistera", genus:="Ligusticum"]
+GenNa[genus=="Poteridium", genus:="Sanguisorba"]
+GenNa[genus=="Pseudorontium", genus:="Antirrhinum"]
+GenNa[genus=="Sabulina", genus:="Minuartia"]
+GenNa[genus=="Saxifragopsis", genus:="Saxifraga"]
+GenNa[genus=="Sclerocactus", genus:="Echinocactus"]
+GenNa[genus=="Scopulophila", genus:="Achyronychia"]
 
-GenNa[genus=="Maurandella", genus:="Maurandya"]
+GenNa[genus=="Scopulophila", genus:="Achyronychia"]
 
 
 # Update familes in the mega tree list
