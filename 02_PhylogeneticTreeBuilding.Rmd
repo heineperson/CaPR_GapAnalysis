@@ -10,6 +10,8 @@ output: html_document
 library(data.table)
 library(stringr)
 library(readr)
+# Phylomaker code will not work without this package 
+library(phytools)
 
 # Capitlize first letter of string
 firstup <- function(x) {
@@ -17,17 +19,17 @@ firstup <- function(x) {
   x
 }
 
+# Loading data
 data <- fread("Data/CAPR_Collections_Search_Results2019-06-03.csv")
 data[,genus:=word(`Taxon Name (Jepson)`,1,1)]
 ```
 
-# Matching Genera and Families to Angiosperm Mega Tree
+# Matching Genera and Families to Phylomaker Super Tree
+
+To have as much phylogenetic resolution as possible, we want to the genera from our species list (Jepson) to match the synonymous genera in the Phylomaker Super tree. I did this manually for about 150 genera. 
+
 ```{r phylogenetic tree building}
 ## Practice using the tool with example data
-# Source the code from Qian & Jin 2016 paper
-source("R_codes for S.PhyloMaker.R")
-# Read in the example list
-# example_splist <- na.omit(as.data.frame(read_delim("example.splist.csv", "\t", escape_double = FALSE, trim_ws = TRUE)))
 # # Read in the megaphylogeny
  phylo<-read.tree("Data/PhytoPhylo.tre") # read in the megaphylogeny.
  nodes <- as.data.table(read_delim("Data/nodes.csv", "\t", escape_double = FALSE,  trim_ws = TRUE))
@@ -61,7 +63,7 @@ GenNa[Family=="Agavaceae", Family:="Asparagacaeae"]
 GenNa[Family=="Chenopodiaceae", Family:="Amaranthaceae"]
 GenNa[!(Family%in%genusTable$family),Family:="FernOrNonVascular"]
 
-# Matching genera to super tree
+# Matching genera from CaPR list to genera in the super tree
 GenNa[genus=="Atrichoseris", genus:="Malacothrix"]
 GenNa[genus=="Aristocapsa", genus:="Chorizanthe"]
 GenNa[genus=="Benitoa", genus:="Lessingia"]
@@ -160,4 +162,21 @@ GenNa[genus=="Yabea", genus:="Caucalis"]
 setkey(Spp, genus)
 setkey(GenNa, genus)
 Spp[GenNa,`:=` (genus = i.genus,family=i.Family)]
+
+# Limit to Vascular Plants
+SppVas <- Spp[family!="FernOrNonVascular"]
+
+```
+
+# Making and Saving the Tree
+
+Using the S Phylomaker Code to construct phylogenetic tree against species list. 
+```{r creating the tree}
+# Source the code from Qian & Jin 2016 paper
+source("R_codes for S.PhyloMaker.R")
+
+## Bulding Tree for all three scenarios
+result_california_tree <- S.PhyloMaker(spList=as.data.frame(SppVas), tree=phylo, nodes=nodes, scenarios=c("S1","S2","S3")) 
+
+
 ```
