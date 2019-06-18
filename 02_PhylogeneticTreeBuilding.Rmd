@@ -5,7 +5,7 @@ date: "6/17/2019"
 output: html_document
 ---
 
-# Setting up Data
+# Set Up
 ```{r dataimport}
 library(data.table)
 library(stringr)
@@ -26,13 +26,14 @@ data[,genus:=word(`Taxon Name (Jepson)`,1,1)]
 
 # Matching Genera and Families to Phylomaker Super Tree
 
-To have as much phylogenetic resolution as possible, we want to the genera from our species list (Jepson) to match the synonymous genera in the Phylomaker Super tree. I did this manually for about 150 genera. 
+To have as much phylogenetic resolution as possible, we want to the genera from our species list (Jepson) to match the synonymous genera in the Phylomaker Super tree. I did this manually for about 150 genera. I was able to reassign about 91 genera. The rest that do not have obvious synonyms will be matched at family level.
 
 ```{r phylogenetic tree building}
-## Practice using the tool with example data
-# # Read in the megaphylogeny
- phylo<-read.tree("Data/PhytoPhylo.tre") # read in the megaphylogeny.
- nodes <- as.data.table(read_delim("Data/nodes.csv", "\t", escape_double = FALSE,  trim_ws = TRUE))
+
+############ S Phylomaker  #############
+## Read in the megaphylogeny in S Phylomaker
+phylo<-read.tree("Data/PhytoPhylo.tre") # read in the megaphylogeny.
+nodes <- as.data.table(read_delim("Data/nodes.csv", "\t", escape_double = FALSE,  trim_ws = TRUE))
  
 ## Making species list for CaPR species
 Spp <- data[,.(Count=.N),by="Taxon Name (Jepson)"]
@@ -157,7 +158,6 @@ GenNa[genus=="Tripterocalyx", genus:="Abronia"]
 GenNa[genus=="Vahlodea", genus:="Aira"]
 GenNa[genus=="Yabea", genus:="Caucalis"]
 
-
 # Update familes in the mega tree list
 setkey(Spp, genus)
 setkey(GenNa, genus)
@@ -165,17 +165,69 @@ Spp[GenNa,`:=` (genus = i.genus,family=i.Family)]
 
 # Limit to Vascular Plants
 SppVas <- Spp[family!="FernOrNonVascular"]
+#############  #############  #############  #############  #############
+
+
+###################### V Phylomaker  ########################
+## Read in the megaphylogeny in S Phylomaker
+GBOTB.extended<-load("Data/GBOTB.extended.rda") # read in the megaphylogeny.
+nodes.info.1 <- load("Data/nodes.info.1.rda")
+ 
+## Making species list for CaPR species
+Spp1 <- data[,.(Count=.N),by="Taxon Name (Jepson)"]
+Spp1[,genus:=word(`Taxon Name (Jepson)`,1,1),by="Taxon Name (Jepson)"]
+
+## Finding Family's from genera from phylomaker Nodes file
+genusTable1 = nodes.info.1[,.(family=family[1]),by="genus"]
+
+## Merge megatree families onto genera
+Spp1 <- merge(Spp1,genusTable1,by="genus",all.x=T)
+#Spp[genus=="Eremanthus", family:="Asteraceae"]
+setnames(Spp1,"Taxon Name (Jepson)","species")
+Spp1 <- Spp1[,.(species,genus,family)]
+
+# Which genera weren't matched in the mega tree
+GenNa1 <- Spp1[is.na(family),.(Count=.N),by="genus"]
+JepFam1 <- data[,.(Count=.N),by=c("Family","genus")]
+# Adding families to genera that weren't matched in the super tree
+GenNa1 <- merge(GenNa1,JepFam1, by="genus")
+GenNa1[,Count.x:=NULL]
+GenNa1[,Count.y:=NULL]
+GenNa1[,Family:=firstup(tolower(Family))]
+# Checking which families in the CaPR list are not in the super tree
+GenNa1[!(Family%in%genusTable1$family)][order(Family)]
+
 
 ```
 
-# Making and Saving the Tree
+# Assembling the Phylogenetic Tree with S Phylomaker
 
 Using the S Phylomaker Code to construct phylogenetic tree against species list. 
+
+S.Phylomater produces phylogenies using three scenarios. This function & method were described in Qian & Jin 2016 in Journal of Ecology.
+
+1. adding genera or species as basal polytomies within their families or genera 
+2. adding genera or species randomly within their families or genera 
+3. adding genera or species to their families or genera using the same approach implemented in Phylomatic and BLADJ 
+
 ```{r creating the tree}
 # Source the code from Qian & Jin 2016 paper
 source("R_codes for S.PhyloMaker.R")
 
 ## Bulding Tree for all three scenarios
+result_california_tree <- S.PhyloMaker(spList=as.data.frame(SppVas), tree=phylo, nodes=nodes, scenarios=c("S1","S2","S3")) 
+
+
+```
+
+
+# Assembling the Phylogenetic Tree with V Phylomaker
+
+```{r vphylomaker}
+# sourcing V Phylomaker code
+source("phylomaker_for_VPhylomaker.R")
+
+## Bulding Tree for Scenario 3
 result_california_tree <- S.PhyloMaker(spList=as.data.frame(SppVas), tree=phylo, nodes=nodes, scenarios=c("S1","S2","S3")) 
 
 
