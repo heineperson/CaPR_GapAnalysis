@@ -182,7 +182,6 @@ genusTable1 = nodes.info.1[,.(family=family[1]),by="genus"]
 
 ## Merge megatree families onto genera
 Spp1 <- merge(Spp1,genusTable1,by="genus",all.x=T)
-#Spp[genus=="Eremanthus", family:="Asteraceae"]
 setnames(Spp1,"Taxon Name (Jepson)","species")
 Spp1 <- Spp1[,.(species,genus,family)]
 
@@ -197,6 +196,19 @@ GenNa1[,Family:=firstup(tolower(Family))]
 # Checking which families in the CaPR list are not in the super tree
 GenNa1[!(Family%in%genusTable1$family)][order(Family)]
 
+# Making a few fixes to these famileis
+GenNa1[Family=="Agavaceae", Family:="Asparagacaeae"]
+GenNa1[Family=="Chenopodiaceae", Family:="Amaranthaceae"]
+GenNa1[!(Family%in%genusTable1$family),Family:="FernOrNonVascular"]
+
+
+# Update familes in the mega tree list
+setkey(Spp1, genus)
+setkey(GenNa1, genus)
+Spp1[GenNa1,`:=` (genus = i.genus,family=i.Family)]
+
+# Limit to Vascular Plants
+SppVas1 <- Spp1[family!="FernOrNonVascular"]
 
 ```
 
@@ -228,7 +240,7 @@ result_california_tree <- S.PhyloMaker(spList=as.data.frame(SppVas), tree=phylo,
 source("phylomaker_for_VPhylomaker.R")
 
 ## Bulding Tree for Scenario 3
-result_california_tree <- S.PhyloMaker(spList=as.data.frame(SppVas), tree=phylo, nodes=nodes, scenarios=c("S1","S2","S3")) 
+result_california_tree <- phylo.maker(spList=as.data.frame(SppVas1), tree=phylo, nodes=nodes, scenarios=c("S1","S2","S3")) 
 
 
 ```
