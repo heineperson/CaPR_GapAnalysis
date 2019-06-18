@@ -170,9 +170,13 @@ SppVas <- Spp[family!="FernOrNonVascular"]
 
 ###################### V Phylomaker  ########################
 ## Read in the megaphylogeny in S Phylomaker
-GBOTB.extended<-load("Data/GBOTB.extended.rda") # read in the megaphylogeny.
-nodes.info.1 <- load("Data/nodes.info.1.rda")
- 
+myenv <- new.env()
+GBOTB.extended<-load("Data/GBOTB.extended.rda",env=myenv) # read in the megaphylogeny.
+GBOTB.extended <- myenv$GBOTB.extended
+nodes.info.1 <- load("Data/nodes.info.1.rda",env=myenv)
+nodes.info.1 <- as.data.table(myenv$nodes.info.1)
+
+
 ## Making species list for CaPR species
 Spp1 <- data[,.(Count=.N),by="Taxon Name (Jepson)"]
 Spp1[,genus:=word(`Taxon Name (Jepson)`,1,1),by="Taxon Name (Jepson)"]
@@ -227,7 +231,7 @@ S.Phylomater produces phylogenies using three scenarios. This function & method 
 source("R_codes for S.PhyloMaker.R")
 
 ## Bulding Tree for all three scenarios
-result_california_tree <- S.PhyloMaker(spList=as.data.frame(SppVas), tree=phylo, nodes=nodes, scenarios=c("S1","S2","S3")) 
+result_california_tree <- S.PhyloMaker(spList=as.data.frame(SppVas), tree=phylo, nodes=nodes, scenarios=c("S3")) 
 
 
 ```
@@ -238,9 +242,10 @@ result_california_tree <- S.PhyloMaker(spList=as.data.frame(SppVas), tree=phylo,
 ```{r vphylomaker}
 # sourcing V Phylomaker code
 source("phylomaker_for_VPhylomaker.R")
+source("at.node.R")
 
 ## Bulding Tree for Scenario 3
-result_california_tree <- phylo.maker(spList=as.data.frame(SppVas1), tree=phylo, nodes=nodes, scenarios=c("S1","S2","S3")) 
+result_california_treeV <- phylo.maker(sp.list=as.data.frame(SppVas1), tree=GBOTB.extended, nodes=nodes.info.1) 
 
 
 ```
