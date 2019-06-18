@@ -12,6 +12,8 @@ library(stringr)
 library(readr)
 # Phylomaker code will not work without this package 
 library(phytools)
+library(R.utils)
+library(ape)
 
 # Capitlize first letter of string
 firstup <- function(x) {
@@ -241,11 +243,13 @@ result_california_tree <- S.PhyloMaker(spList=as.data.frame(SppVas), tree=phylo,
 
 ```{r vphylomaker}
 # sourcing V Phylomaker code
-source("phylomaker_for_VPhylomaker.R")
-source("at.node.R")
+sapply( list.files("VPhylomakerCodes/", full.names=TRUE), source )
+
+
 
 ## Bulding Tree for Scenario 3
 result_california_treeV <- phylo.maker(sp.list=as.data.frame(SppVas1), tree=GBOTB.extended, nodes=nodes.info.1) 
-
+write.tree(result_california_treeV$scenario.3,"Data/phyloVCali_genusNotCorrected.tre")
+plot.phylo(result_california_treeV$scenario.3,type="fan",cex=0.3)
 
 ```
