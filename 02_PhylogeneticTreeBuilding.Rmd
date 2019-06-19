@@ -210,6 +210,24 @@ GenNa1[Family=="Agavaceae", Family:="Asparagacaeae"]
 GenNa1[Family=="Chenopodiaceae", Family:="Amaranthaceae"]
 GenNa1[!(Family%in%genusTable1$family),Family:="FernOrNonVascular"]
 
+# Assigning Genus Relatives
+GenNa1[genus%in%c("Acanthoscyphus","Oxytheca"), `:=` (genus.relative="Sidotheca",citation="Reveal_JohanneshowelliaPolygonaceaeEriogonoideae_2004")]
+GenNa1[genus%in%c("Achyrachaena"), `:=` (genus.relative="Blepharipappus",citation="Baldwin_Originrelationshipstarweedsilversword_2000")]
+GenNa1[genus%in%c("Achyronychia"), `:=` (genus.relative="Loeflingia",citation="Greenberg_Molecularsystematicscharacter_2011")]
+GenNa1[genus%in%c("Aconogonon"), `:=` (genus.relative="Polygonum",citation="ThePlantList")]
+GenNa1[genus%in%c("Allotropa"), `:=` (genus.relative="Monotropa",citation="Cullings_MolecularphylogenyMonotropoideae_1994")]
+GenNa1[genus%in%c("Ammoselinum","Apiastrum"), `:=` (genus.relative="Spermolepis",citation="Nesom_TaxonomyApiastrumammoselinum_2012")]
+GenNa1[genus%in%c("Amphipappus"), `:=` (genus.relative="Chrysothamnus",citation="Roberts_MolecularPhylogenyChrysothamnus_2004")]
+GenNa1[genus%in%c("Amsonia"), `:=` (genus.relative="Melodinus",citation="Simoes_PHYLOGENYSYSTEMATICSRAUVOLFIOIDEAE_2007")]
+GenNa1[genus%in%c("Ancistrocarphus"), `:=` (genus.relative="Stylocline",citation="Morefield_THREENEWSPECIES_1992")]
+GenNa1[genus%in%c("Argyrochosma"), `:=` (genus.relative="Pellaea",citation="Sigel_Speciesrelationshipsfarina_2011")]
+GenNa1[genus%in%c("Aristocapsa"), `:=` (genus.relative="Chorizanthe",citation="Reveal_JohanneshowelliaPolygonaceaeEriogonoideae_2004")]
+GenNa1[genus%in%c("Aspidotis","Astrolepis"), `:=` (genus.relative="Cheilanthes",citation="Gastony_CheilanthoidFernsPteridaceae_1998")]
+GenNa1[genus%in%c("Bahiopsis"), `:=` (genus.relative="Viguiera",citation="Schilling_TAXONOMICREVISIONVIGUIERA_1990")]
+GenNa1[genus%in%c("Bebbia"), `:=` (genus.relative="Tridax",citation="Panero_Phylogeneticrelationshipssubtribe_1999")]
+GenNa1[genus%in%c("Botrypus"), `:=` (genus.relative="Botrychium",citation="Dauphin_Molecularphylogeneticssupports_2014")]
+GenNa1[genus%in%c("Callitriche"), `:=` (genus.relative="Hippuris",citation="Albach_Piecingtogethernew_2005")]
+
 
 # Update familes in the mega tree list
 setkey(Spp1, genus)
@@ -257,5 +275,7 @@ write.tree(result_california_treeV_new$scenario.3,"Data/phyloVCali_genusNotCorre
 
 write.tree(result_california_treeV$scenario.3,"Data/phyloVCali_genusNotCorrected.tre")
 plot.phylo(result_california_treeV$scenario.3,type="fan",cex=0.3)
+
+treeTest <- read.tree("Data/phyloVCali_genusNotCorrected_devtoolsVersion.tre")
 
 ```
