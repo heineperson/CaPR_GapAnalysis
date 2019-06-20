@@ -25,7 +25,7 @@ firstup <- function(x) {
 }
 
 # Loading data
-data <- fread("Data/CAPR_Collections_Search_Results2019-06-03.csv")
+data <- fread("Data/CAPR_Collections_Search_Results2019-06-20.csv")
 data[,genus:=word(`Taxon Name (Jepson)`,1,1)]
 ```
 
@@ -171,15 +171,17 @@ Spp[GenNa,`:=` (genus = i.genus,family=i.Family)]
 # Limit to Vascular Plants
 SppVas <- Spp[family!="FernOrNonVascular"]
 #############  #############  #############  #############  #############
+```
 
-
+## Matching Genera to the V Phylomaker Phylogeny
+```{r v phylo maker data clean up}
 ###################### V Phylomaker  ########################
 ## Read in the megaphylogeny in S Phylomaker
-myenv <- new.env()
-GBOTB.extended<-load("Data/GBOTB.extended.rda",env=myenv) # read in the megaphylogeny.
-GBOTB.extended <- myenv$GBOTB.extended
-nodes.info.1 <- load("Data/nodes.info.1.rda",env=myenv)
-nodes.info.1 <- as.data.table(myenv$nodes.info.1)
+#myenv <- new.env()
+#GBOTB.extended<-load("Data/GBOTB.extended.rda",env=myenv) # read in the megaphylogeny.
+#GBOTB.extended <- myenv$GBOTB.extended
+#nodes.info.1 <- load("Data/nodes.info.1.rda",env=myenv)
+#nodes.info.1 <- as.data.table(myenv$nodes.info.1)
 
 
 ## Making species list for CaPR species
@@ -208,7 +210,9 @@ GenNa1[!(Family%in%genusTable1$family)][order(Family)]
 # Making a few fixes to these famileis
 GenNa1[Family=="Agavaceae", Family:="Asparagacaeae"]
 GenNa1[Family=="Chenopodiaceae", Family:="Amaranthaceae"]
+
 GenNa1[!(Family%in%genusTable1$family),Family:="FernOrNonVascular"]
+
 
 # Assigning Genus Relatives
 GenNa1[genus%in%c("Acanthoscyphus","Oxytheca"), `:=` (genus.relative="Sidotheca",citation="Reveal_JohanneshowelliaPolygonaceaeEriogonoideae_2004")]
@@ -316,12 +320,18 @@ GenNa1[genus%in%c("Hemieva"), `:=` (genus.relative="Suksdorfia",citation="Soltis
 GenNa1[genus%in%c("Mitellastra"), `:=` (genus.relative="Elmera",citation="Okuyama_Parallelfloraladaptations_2008")]
 GenNa1[genus%in%c("Ozomelis"), `:=` (genus.relative="Conimitella",citation="Folk_Phylogeneticrelationshipscharacter_2014")]
 GenNa1[genus%in%c("Pectiantia"), `:=` (genus.relative="Mitella",citation="Folk_Phylogeneticrelationshipscharacter_2014")]
+GenNa1[genus%in%c("Euphrosyne"), `:=` (genus.relative="Ambrosia",citation="Miao_SystematicsImplicationsChloroplast_1995")]
+GenNa1[genus%in%c("Spartina"), `:=` (genus.relative="Sporobolus",citation="Hilu_phylogenyChloridoideaePoaceae_2001")]
+
 
 
 # Update familes in the mega tree list
 setkey(Spp1, genus)
 setkey(GenNa1, genus)
-Spp1[GenNa1,`:=` (genus = i.genus,family=i.Family)]
+Spp1[GenNa1,`:=` (genus = i.genus,family=i.Family, genus.relative=i.genus.relative)]
+
+# Adding species relatives to varieties and subspecies
+Spp1[grepl("var.",species, fixed=T) | grepl("subsp.",species, fixed=T),species.relative:=word(species,1,2)]
 
 # Limit to Vascular Plants
 SppVas1 <- Spp1[family!="FernOrNonVascular"]
