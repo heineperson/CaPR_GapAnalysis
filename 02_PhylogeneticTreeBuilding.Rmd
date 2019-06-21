@@ -18,6 +18,7 @@ library(ape)
 library(V.PhyloMaker)
 # package for adding subspecies ot species
 library(pastis)
+library(ips)
 
 
 # Capitlize first letter of string
@@ -226,10 +227,18 @@ abiesList[,taxon:=gsub(" ", "_",taxon)]
 abiesList[taxon=="Abies_lasiocarpa_var._lasiocarpa",taxon:="Abies_lasiocarpa"]
 
 
-obj <- pastis_main(constraint_tree=abiesBoundSppOnly$phylo,taxa_list=as.data.frame(abiesList),output_file="ABIES.nexus")
+obj <- pastis_main(constraint_tree=abiesBoundSppOnly$phylo,taxa_list=as.data.frame(abiesList),output_file="MrBayesData/ABIES.nexus")
 
-abiesTree <- read.nexus("ABIES.nexus")
+system("mb MrBayesData/ABIES.nexus")
+execute <- system("execute MrBayesData/ABIES.nexus")
 
+abiesTreeMCMC <- read.nexus("MrBayesData/ABIES.nexus.con.tre")
+
+plot(abiesTreeMCMC)
+
+# conch(constraint_tree=abiesBoundSppOnly$phylo,
+# mrbayes_output='ABIES.nexus.t',
+# simple_edge_scaling=TRUE)
 
 
 
