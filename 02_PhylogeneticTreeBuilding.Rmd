@@ -196,7 +196,21 @@ SppVas1 <- Spp1[family!="FernOrNonVascular"]
 
 # Looking at how V Phylomaker Binds Species with Abies as example genus
 
-I specified that Abies magnifica var. magnifica and var. shastensis are relatives of Abies magnifica. 
+I specified that Abies magnifica var. magnifica and var. shastensis are relatives of Abies magnifica. This adds the subspecies to the same polytomy as Abies magnifica, but it does not nest them within Abies magnifica
+
+```{r abies plot}
+# Binding Relatives
+abiesBound <- bind.relative(SppVas1[genus=="Abies"]) 
+# Building Tree
+result_california_treeV_abies<- phylo.maker(sp.list=abiesBound$species.list, tree=abiesBound$phylo, nodes=abiesBound$nodes.info) 
+
+plot(result_california_treeV_abies$scenario.3)
+
+```
+
+# Creating Nested Subspecies
+
+What I would rather see is susbspecies and varieties replaces a species on a phylogeny. I wrote a regular expression code to replace species taxon with nested infra taxa. Makes a **BIG** assumption that the lengths of the sub species branches are half that of the branch length among species. It makes the branches longer for that species overall, which might be problematic. 
 
 ```{r abies example}
 
@@ -210,12 +224,13 @@ addSubSpecies <- function(infraList,Tree){
   #branchLength <- gsub("^.*Abies_magnifica.*?(\\d+\\.*\\d*).*", "\\1", exampleTree)
   branchLength <- as.numeric(gsub(paste0("^.*",species,".*?(\\d+\\.*\\d*).*"),"\\1", TreeText))
 
-# Creating String of subspecies that will replace "species"
+  # Calculate new species branch length 
+  # HUGE ASSUMPTION HERE THAT BRANCH LENGTH FOR INFRASPECIES IS HALF THAT OF BRANCH LENGTHS BETWEEN SPECIES
   createSppBL <- function(infra){
-    # HUGE ASSUMPTION HERE THAT BRANCH LENGTH FOR INFRASPECIES IS HALF THAT OF BRANCH LENGTHS BETWEEN GENERA
     paste0(infra,":",branchLength/2)
   }
 
+# Creating String of subspecies that will replace "species"
   subSpeciesString <- paste0("(",toString(sapply(infraList,createSppBL)),"):")
   
   # Replacing species with subspecies
@@ -224,19 +239,81 @@ addSubSpecies <- function(infraList,Tree){
   return(FixedTree)
 }
 
+## Abies Example
+# Abies phylogeny only species level taxa
+AbiesNoSub <- phylo.maker(sp.list=SppVas1[genus=="Abies" & !(grepl("var.",species))]) 
 
-abiesBound <- bind.relative(Spp1[genus=="Abies" & !(grepl("var.",species))])
-#result_california_treeV_abies<- phylo.maker(sp.list=abiesBound$species.list, tree=abiesBound$phylo, nodes=abiesBound$nodes.info) 
-result_california_treeV_abies<- phylo.maker(sp.list=SppVas1[genus=="Abies" & !(grepl("var.",species))]) 
-
+# List of subspecies I want to add
 infraListAbies <- c("Abies_magnifica_var._magnifica","Abies_magnifica_var._shastensis")
 
-newAbiesTree <- addSubSpecies(infraListAbies,result_california_treeV_abies$scenario.3)
+# Running tree and code through list
+newAbiesTree <- addSubSpecies(infraListAbies,AbiesNoSub$scenario.3)
+
 plot(newAbiesTree)
+
+## Astragalus example
+AstraNoSub <- phylo.maker(sp.list=SppVas1[genus=="Astragalus" & !(grepl("var.",species,fixed=T) | grepl("subsp.",species,fixed=T))]) 
+
+# List of subspecies I want to add
+infraListAstrLen <- SppVas1[grepl("lentiginosus",species) & (grepl("var.",species,fixed=T) | grepl("subsp.",species,fixed=T))]$species
+infraListAstrLen <- gsub(" ","_",infraListAstrLen)
+
+# Running tree and code through list
+newAstrTree <- addSubSpecies(infraListAstrLen,AstraNoSub$scenario.3)
+
+plot(newAstrTree)
 
 ```
 
+# Assembling the Phylogenetic Tree with V Phylomaker
+
+V.Phylomater produces phylogenies using three scenarios. This function & method were described in Qian & Jin 2019 in Journal of Ecology.
+
+1. adding genera or species as basal polytomies within their families or genera 
+2. adding genera or species randomly within their families or genera 
+3. adding genera or species to their families or genera using the same approach implemented in Phylomatic and BLADJ  <- This is deafult
+
+I plan to build a phylogeny for all species level taxa using phylomaker and then nest the subspecies each species (replacing the taxa levelspecies) 
+```{r vphylomaker}
+## Bulding Tree for Scenario 3
+
+# sourcing V Phylomaker code
+# sapply( list.files("VPhylomakerCodes/", full.names=TRUE), source )
+
+# Filtering for only species
+SppCopy <- SppVas1
+SppCopy[,binomial:=word(species,1,2)]
+SppCopy[,SppCount:=.N,by="binomial"]
+SppCopy[,SppID:=1:.N,by="binomial"]
+SppOnly <- SppCopy[SppID==1]
+SppOnly[SppCount==1,species:=binomial]
+
+# Binding Relatives at the Genus Level
+SpeicesOnlyBind <- bind.relative(SppOnly)
+
+# Running V phylomaker
+result_california_speciesOnly <-  phylo.maker(sp.list=SpeicesOnlyBind$species.list, tree=SpeicesOnlyBind$phylo, nodes=SpeicesOnlyBind$nodes.info) 
+
+
+write.tree(result_california_speciesOnly$scenario.3,"Data/result_california_speciesOnly.tre")
+#write.tree(result_california_treeV$scenario.3,"Data/phyloVCali_genusNotCorrected.tre")
+plot.phylo(result_california_treeV$scenario.3,type="fan",cex=0.3)
+
+#treeTest <- read.tree("Data/phyloVCali_genusNotCorrected_devtoolsVersion.tre")
+
+```
+
+# Replacing taxa
+
+```{r}
+
+
+```
+
+
 # Playing with Pastis
+
+This package works with Mr. Bayes to add new lineages.. I couldn't really get it to work.
 ```{r pastis}
 
 SppCopy <- SppVas1
@@ -279,32 +356,3 @@ pastis_main(accipitridaeBasicPastis, output_file="MrBayesData/AccipitridaeBasic.
 ```
 
 
-
-
-
-# Assembling the Phylogenetic Tree with V Phylomaker
-
-V.Phylomater produces phylogenies using three scenarios. This function & method were described in Qian & Jin 2019 in Journal of Ecology.
-
-1. adding genera or species as basal polytomies within their families or genera 
-2. adding genera or species randomly within their families or genera 
-3. adding genera or species to their families or genera using the same approach implemented in Phylomatic and BLADJ  <- This is deafult
-
-
-
-```{r vphylomaker}
-# sourcing V Phylomaker code
-# sapply( list.files("VPhylomakerCodes/", full.names=TRUE), source )
-
-
-
-## Bulding Tree for Scenario 3
-
-
-write.tree(result_california_treeV_new$scenario.3,"Data/phyloVCali_genusNotCorrected_devtoolsVersion.tre")
-write.tree(result_california_treeV$scenario.3,"Data/phyloVCali_genusNotCorrected.tre")
-plot.phylo(result_california_treeV$scenario.3,type="fan",cex=0.3)
-
-treeTest <- read.tree("Data/phyloVCali_genusNotCorrected_devtoolsVersion.tre")
-
-```
