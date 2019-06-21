@@ -5,7 +5,7 @@ date: "6/21/2019"
 output: html_document
 ---
 
-# Read in Tree Created in File 02_PhylogeneticTreeBuilding
+# Read in Data & Tree Created in File 02_PhylogeneticTreeBuilding
 
 ```{r setup, include=FALSE}
 library(ape)
@@ -17,11 +17,10 @@ spOnlyTree <- read.tree("Data/result_california_speciesOnly.tre")
 accDat <- fread("Data/tblAccessionsCAPR_2019-Jun-21_1829.csv",na.strings=c("",NA,"NA"))
 spp <- fread("Data/tblSpeciesJepCAPR_2019-Jun-21_1946.csv")
 cnps <- fread("Data/tblCNPSRanks_2019-Jun-21_1830.csv")
-
 ```
 
-# Creating Trait Matrix
-```{r trait matrix}
+# Data Summary
+```{r summary}
 ## Summarize Accession Data by JepID to find the following variables
 # Total Seed Count
 # Total Seed Collections
@@ -29,12 +28,22 @@ cnps <- fread("Data/tblCNPSRanks_2019-Jun-21_1830.csv")
 # Total unique Cnddb EO indices
 
 accDat[,organismQuantity:=as.numeric(organismQuantity)]
-summAcc <- accDat[,.(collectionTypes=toString(sort(unique(basisofRecord))),totalSeed=sum((organismQuantity),na.rm=T), totalSeedCollections=sum(1*(basisofRecord=="Seed")),totalColl=.N, uniqueEOs = toString(unique(cnddbEOIndex))),by="taxonID"]
+summAcc <- accDat[,.(collectionTypes=toString(sort(unique(basisofRecord))),totalSeed=sum((organismQuantity),na.rm=T), totalSeedCollections=sum(1*(basisofRecord=="Seed")),totalColl=.N, 
+uniqueEOs = toString(unique(cnddbEOIndex))),by="taxonID"]
 summAcc[,uniqueEOs:=ifelse(uniqueEOs=="NA", 0,str_count(uniqueEOs,",")+1)]
 
 # Merge summary onto species and CNPS
 summAccwithSpp <- merge(spp,summAcc,by.y="taxonID",by.x="JepID",all.x=T)
 summAccwithSpp <- merge(summAccwithSpp,cnps,by="JepID",all.x=T)
+
+```
+
+# Adding Infra Species to the Tree
+
+Looping through all the species with infra species and replace the species level taxa with multiple infraspecies in the same clade.
+
+```{r trait matrix}
+
 
 # Add _ to gsub
 summAccwithSpp[,name_minus_authors:=gsub(" ","_",name_minus_authors)]
@@ -57,12 +66,10 @@ summAccwithSpp[Reassign=="Yes"  & InfraType=="both",.(binomial,SppCount,totalCol
 # Fixing the one bad example
 summAccwithSpp[Reassign=="Yes"  & InfraType=="both", InfraType:="subsp."]
 
-
-
-# Giving the reassign species the prototypic name
+# Specifying the name on the phylogeny for each species (different than the Jep ID)
 summAccwithSpp[,nameOnPhylogeny:=ifelse(Reassign=="Yes",paste(name_minus_authors,InfraType,species,sep="_"),name_minus_authors)]
 
-# Seed how many duplicate taxon we now have
+# Create object that can be looped through to add species
 InfraSummary <- summAccwithSpp[(infraSpp)!="",.(InfraString=toString(unique(nameOnPhylogeny))),by=c("binomial")]
 
 newTree <- spOnlyTree
@@ -72,9 +79,6 @@ print(infraListtmp)
 newTree <- addSubSpecies(infraListtmp,newTree)
 
 }
-
-
-newTree <- addSubSpecies(unlist(strsplit(InfraSummary$InfraString[1], split=", ")),newTree)
 
 # What does it look like on the current tree when there is only one infra species
 pruned.treeDud<-drop.tip(newTree,newTree$tip.label[-which(grepl("Brickellia",newTree$tip.label))])
