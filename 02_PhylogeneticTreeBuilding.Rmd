@@ -19,6 +19,7 @@ library(V.PhyloMaker)
 # package for adding subspecies ot species
 library(pastis)
 library(ips)
+library(ggtree)
 
 
 # Capitlize first letter of string
@@ -232,7 +233,7 @@ addSubSpecies <- function(infraList,Tree){
 
 # Creating String of subspecies that will replace "species"
   subSpeciesString <- paste0("(",toString(sapply(infraList,createSppBL)),"):")
-  
+  print(subSpeciesString)
   # Replacing species with subspecies
   FixedTree <- read.newick(text=gsub(paste0(species,":"),subSpeciesString,TreeText))
   
@@ -296,6 +297,7 @@ result_california_speciesOnly <-  phylo.maker(sp.list=SpeicesOnlyBind$species.li
 
 
 write.tree(result_california_speciesOnly$scenario.3,"Data/result_california_speciesOnly.tre")
+write.csv(result_california_speciesOnly$species.list,"Data/result_california_speciesOnly.csv")
 #write.tree(result_california_treeV$scenario.3,"Data/phyloVCali_genusNotCorrected.tre")
 plot.phylo(result_california_treeV$scenario.3,type="fan",cex=0.3)
 
@@ -306,7 +308,25 @@ plot.phylo(result_california_treeV$scenario.3,type="fan",cex=0.3)
 # Replacing taxa
 
 ```{r}
+SppCopy[,species1:=gsub(" ","_",species)]
+InfraSummary <- SppCopy[SppCount>1 & (grepl("var.",species1,fixed=T)|grepl("subsp.",species1,fixed=T)),.(InfraString=toString(species1)) ,by="binomial"]
 
+
+newTree <- result_california_speciesOnly$scenario.3
+for (i in 1:length(InfraSummary$binomial)){
+infraListtmp <- unlist(strsplit(InfraSummary$InfraString[i], split=", "))
+print(infraListtmp)
+newTree <- addSubSpecies(infraListtmp,newTree)
+
+}
+
+
+pruned.treeAbronia<-drop.tip(newTree,newTree$tip.label[-which(grepl("Abronia",newTree$tip.label))])
+plot(pruned.treeAbronia)
+
+
+pruned.treeAbies<-drop.tip(newTree,newTree$tip.label[-which(grepl("Abies",newTree$tip.label))])
+plot(pruned.treeAbies)
 
 ```
 
