@@ -200,12 +200,6 @@ I specified that Abies magnifica var. magnifica and var. shastensis are relative
 
 ```{r abies example}
 
-abiesBound <- bind.relative(Spp1[genus=="Abies"])
-result_california_treeV_abies<- phylo.maker(sp.list=abiesBound$species.list, tree=abiesBound$phylo, nodes=abiesBound$nodes.info) 
-
-# Working out how to nest subspecies within species
-exampleTree <- write.tree(result_california_treeV_abies$scenario.3)
-
 addSubSpecies <- function(infraList,Tree){
   # Find the species you want to replace with infra species
   species <- word(infraList[1],1,2,sep="_")
@@ -213,25 +207,38 @@ addSubSpecies <- function(infraList,Tree){
   # Extract the branch length next to the species
   #branchLength <- gsub("^.*Abies_magnifica.*?(\\d+\\.*\\d*).*", "\\1", exampleTree)
   branchLength <- as.numeric(gsub(paste0("^.*",species,".*?(\\d+\\.*\\d*).*"),"\\1", Tree))
-  
-  # Creating String of subspecies that will replace "species"
+
+# Creating String of subspecies that will replace "species"
   createSppBL <- function(infra){
     # HUGE ASSUMPTION HERE THAT BRANCH LENGTH FOR INFRASPECIES IS HALF THAT OF BRANCH LENGTHS BETWEEN GENERA
     paste0(infra,":",branchLength/2)
   }
-  
+
   subSpeciesString <- paste0("(",toString(sapply(infraList,createSppBL)),"):")
   
   # Replacing species with subspecies
-  FixedTree <- gsub(paste0(species,":"),subSpeciesString,exampleTree)
+  FixedTree <- read.newick(text=gsub(paste0(species,":"),subSpeciesString,Tree))
   
-  return(list(species, branchLength,subSpeciesString,FixedTree))
+  return(FixedTree)
 }
+
+
+
+abiesBound <- bind.relative(Spp1[genus=="Abies" & !(grepl("var.",species))])
+#result_california_treeV_abies<- phylo.maker(sp.list=abiesBound$species.list, tree=abiesBound$phylo, nodes=abiesBound$nodes.info) 
+result_california_treeV_abies<- phylo.maker(sp.list=SppVas1[genus=="Abies" & !(grepl("var.",species))]) 
+
+# Working out how to nest subspecies within species
+exampleTree <- write.tree(result_california_treeV_abies$scenario.3)
+
 
 infraListAbies <- c("Abies_magnifica_var._magnifica","Abies_magnifica_var._shastensis")
 
 obj <- addSubSpecies(infraListAbies,exampleTree)
 plot(read.newick(text=obj[[4]]))
+
+newAbiesTree <- addSubSpecies(infraListAbies,result_california_treeV_abies$scenario.3)
+plot(newAbiesTree)
 
 ```
 
