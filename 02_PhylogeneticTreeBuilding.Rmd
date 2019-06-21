@@ -222,7 +222,6 @@ addSubSpecies <- function(infraList,Tree){
   TreeText <- write.tree(Tree)
     
   # Extract the branch length next to the species
-  #branchLength <- gsub("^.*Abies_magnifica.*?(\\d+\\.*\\d*).*", "\\1", exampleTree)
   branchLength <- as.numeric(gsub(paste0("^.*",species,".*?(\\d+\\.*\\d*).*"),"\\1", TreeText))
 
   # Calculate new species branch length 
@@ -232,10 +231,13 @@ addSubSpecies <- function(infraList,Tree){
   }
 
 # Creating String of subspecies that will replace "species"
-  subSpeciesString <- paste0("(",toString(sapply(infraList,createSppBL)),"):")
-  print(subSpeciesString)
+ # subSpeciesString <- paste0("(",toString(sapply(infraList,createSppBL)),"):")
+  subSpeciesString <- paste0("(",toString(sapply(infraList,createSppBL)),"):",as.character(branchLength/2))
+
+  #print(subSpeciesString)
   # Replacing species with subspecies
-  FixedTree <- read.newick(text=gsub(paste0(species,":"),subSpeciesString,TreeText))
+  #FixedTree <- read.newick(text=gsub(paste0(species,":"),subSpeciesString,TreeText))
+  FixedTree <- read.newick(text=gsub(paste0(species,":\\d+\\.*\\d*"),subSpeciesString,TreeText))
   
   return(FixedTree)
 }
@@ -305,7 +307,9 @@ plot.phylo(result_california_treeV$scenario.3,type="fan",cex=0.3)
 
 ```
 
-# Replacing taxa
+# Adding infra species to the tree
+
+Looping through all the species with infra species and replace the species level taxa with multiple infraspecies in the same clade.
 
 ```{r}
 SppCopy[,species1:=gsub(" ","_",species)]
@@ -327,6 +331,9 @@ plot(pruned.treeAbronia)
 
 pruned.treeAbies<-drop.tip(newTree,newTree$tip.label[-which(grepl("Abies",newTree$tip.label))])
 plot(pruned.treeAbies)
+
+pruned.treeDud<-drop.tip(newTree,newTree$tip.label[-which(grepl("Dudleya",newTree$tip.label))])
+plot(pruned.treeDud)
 
 ```
 
