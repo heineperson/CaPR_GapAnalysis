@@ -209,9 +209,20 @@ plot(result_california_treeV_abies$scenario.3)
 
 ```
 
-# Creating Nested Subspecies
+# Function for Adding InfraSpecies Nested within Species
 
-What I would rather see is susbspecies and varieties replaces a species on a phylogeny. I wrote a regular expression code to replace species taxon with nested infra taxa. Makes a **BIG** assumption that the lengths of the sub species branches are half that of the branch length among species. It makes the branches longer for that species overall, which might be problematic. 
+What I would rather see is susbspecies and varieties replaces a species on a phylogeny. I wrote a regular expression code to replace species taxon with nested infra taxa. I make a somewhat large assumption in dealing with branch lengths: For each group of infraspecies, I added a poltomy at the halfway point of the species existing branch. Then the branch length for each infraspecies is equal to half of the branch length of the original species. I made this assumption to make sure I didn't make infraspecies have artificially longer branches than non-infraspecies. 
+
+
+For instance, for a clade in which _Abies procera_ and _Abies magnifica_ are sister species [see Old Tree], I added two subspecies for _Abies magnifica_ ( _Abies magnifica var.magnifica _ & _Abies magnifica var. sharstensis _), by replacing _Abies mangifica_ with a string that has two infra species with equal branch lengths that diverge at a node half way down original _Abies magnifica_ branch
+
+**OLD TREE**
+(Abies_procera:0.58,Abies_magnifica:0.58)
+
+
+**NEW TREE**
+(Abies_procera:0.58,(Abies_magnifica_var_magnifica:0.29, Abies_magnifica_var_shastensis:0.29):0.29)
+
 
 ```{r abies example}
 
@@ -276,7 +287,8 @@ V.Phylomater produces phylogenies using three scenarios. This function & method 
 2. adding genera or species randomly within their families or genera 
 3. adding genera or species to their families or genera using the same approach implemented in Phylomatic and BLADJ  <- This is deafult
 
-I plan to build a phylogeny for all species level taxa using phylomaker and then nest the subspecies each species (replacing the taxa levelspecies) 
+I plan to build a phylogeny for all species level taxa using phylomaker and then nest the subspecies within each species (replacing the taxa levelspecies) 
+
 ```{r vphylomaker}
 ## Bulding Tree for Scenario 3
 
@@ -297,21 +309,17 @@ SpeicesOnlyBind <- bind.relative(SppOnly)
 # Running V phylomaker
 result_california_speciesOnly <-  phylo.maker(sp.list=SpeicesOnlyBind$species.list, tree=SpeicesOnlyBind$phylo, nodes=SpeicesOnlyBind$nodes.info) 
 
-# 
+# Writing data to the disc
  write.tree(result_california_speciesOnly$scenario.3,"Data/result_california_speciesOnly.tre")
  write.csv(result_california_speciesOnly$species.list,"Data/result_california_speciesOnly.csv")
-# #write.tree(result_california_treeV$scenario.3,"Data/phyloVCali_genusNotCorrected.tre")
-# plot.phylo(result_california_treeV$scenario.3,type="fan",cex=0.3)
-# 
-# #treeTest <- read.tree("Data/phyloVCali_genusNotCorrected_devtoolsVersion.tre")
 
 ```
 
-# Adding infra species to the tree
+# Adding infraspecies to the tree
 
 Looping through all the species with infra species and replace the species level taxa with multiple infraspecies in the same clade.
 
-```{r}
+```{r looping through infraspecies code}
 SppCopy[,species1:=gsub(" ","_",species)]
 InfraSummary <- SppCopy[SppCount>1 & (grepl("var.",species1,fixed=T)|grepl("subsp.",species1,fixed=T)),.(InfraString=toString(species1)) ,by="binomial"]
 
@@ -326,10 +334,10 @@ newTree <- addSubSpecies(infraListtmp,newTree)
 
 write.tree(newTree, "Data/californiaTreewithInfraSpecies.tre")
 
+# Evaluating species genera
 
 pruned.treeAbronia<-drop.tip(newTree,newTree$tip.label[-which(grepl("Abronia",newTree$tip.label))])
 plot(pruned.treeAbronia)
-
 
 pruned.treeAbies<-drop.tip(newTree,newTree$tip.label[-which(grepl("Abies",newTree$tip.label))])
 plot(pruned.treeAbies)
@@ -339,49 +347,5 @@ plot(pruned.treeDud)
 
 ```
 
-
-# Playing with Pastis
-
-This package works with Mr. Bayes to add new lineages.. I couldn't really get it to work.
-```{r pastis}
-
-SppCopy <- SppVas1
-SppCopy[,binomial:=word(species,1,2)]
-SppCopy[,SppCount:=.N,by="binomial"]
-SppCopy[,SppID:=1:.N,by="binomial"]
-SppOnly <- SppCopy[SppID==1]
-SppOnly[SppCount==1,species:=binomial]
-
-SppOnly <- SppOnly[,.(species=binomial, genus=genus,family=family, genus.relative=genus.relative,species.relative=species.relative)]
-abiesBoundSppOnly <- bind.relative(as.data.frame(SppOnly[genus=="Abies"]))
-
-plot(abiesBoundSppOnly$phylo)
-
-abiesList = SppCopy[genus=="Abies",.(taxon=species,clade=binomial)]
-abiesList[,clade:=gsub(" ", "_",clade)]
-abiesList[,taxon:=gsub(" ", "_",taxon)]
-abiesList[taxon=="Abies_lasiocarpa_var._lasiocarpa",taxon:="Abies_lasiocarpa"]
-
-
-obj <- pastis_main(constraint_tree=abiesBoundSppOnly$phylo,taxa_list=as.data.frame(abiesList),output_file="MrBayesData/ABIES.nexus")
-
-system("mb MrBayesData/ABIES.nexus")
-execute <- system("execute MrBayesData/ABIES.nexus")
-
-abiesTreeMCMC <- read.nexus("MrBayesData/ABIES.nexus.con.tre")
-
-plot(abiesTreeMCMC)
-
-# conch(constraint_tree=abiesBoundSppOnly$phylo,
-# mrbayes_output='ABIES.nexus.t',
-# simple_edge_scaling=TRUE)
-
-
-data(accipitridaeBasicPastis)
-pastis_main(accipitridaeBasicPastis, output_file="MrBayesData/AccipitridaeBasic.nexus")
-
-
-
-```
 
 
