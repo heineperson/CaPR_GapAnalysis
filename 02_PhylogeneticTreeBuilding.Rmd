@@ -297,13 +297,13 @@ SpeicesOnlyBind <- bind.relative(SppOnly)
 # Running V phylomaker
 result_california_speciesOnly <-  phylo.maker(sp.list=SpeicesOnlyBind$species.list, tree=SpeicesOnlyBind$phylo, nodes=SpeicesOnlyBind$nodes.info) 
 
-
-write.tree(result_california_speciesOnly$scenario.3,"Data/result_california_speciesOnly.tre")
-write.csv(result_california_speciesOnly$species.list,"Data/result_california_speciesOnly.csv")
-#write.tree(result_california_treeV$scenario.3,"Data/phyloVCali_genusNotCorrected.tre")
-plot.phylo(result_california_treeV$scenario.3,type="fan",cex=0.3)
-
-#treeTest <- read.tree("Data/phyloVCali_genusNotCorrected_devtoolsVersion.tre")
+# 
+ write.tree(result_california_speciesOnly$scenario.3,"Data/result_california_speciesOnly.tre")
+ write.csv(result_california_speciesOnly$species.list,"Data/result_california_speciesOnly.csv")
+# #write.tree(result_california_treeV$scenario.3,"Data/phyloVCali_genusNotCorrected.tre")
+# plot.phylo(result_california_treeV$scenario.3,type="fan",cex=0.3)
+# 
+# #treeTest <- read.tree("Data/phyloVCali_genusNotCorrected_devtoolsVersion.tre")
 
 ```
 
@@ -323,6 +323,8 @@ print(infraListtmp)
 newTree <- addSubSpecies(infraListtmp,newTree)
 
 }
+
+write.tree(newTree, "Data/californiaTreewithInfraSpecies.tre")
 
 
 pruned.treeAbronia<-drop.tip(newTree,newTree$tip.label[-which(grepl("Abronia",newTree$tip.label))])
