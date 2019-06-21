@@ -1,0 +1,53 @@
+---
+title: "03 Manipulating Phylogenetic Tree"
+author: "Katie Heineman"
+date: "6/21/2019"
+output: html_document
+---
+
+# Read in Tree Created in File 02_PhylogeneticTreeBuilding
+
+```{r setup, include=FALSE}
+library(ape)
+library(data.table)
+library(phytools)
+
+caliTree <- read.tree("Data/californiaTreewithInfraSpecies.tre")
+accDat <- fread("Data/tblAccessionsCAPR_2019-Jun-21_1829.csv",na.strings=c("",NA,"NA"))
+spp <- fread("Data/tblSpeciesJepCAPR_2019-Jun-21_1829.csv")
+cnps <- fread("Data/tblCNPSRanks_2019-Jun-21_1830.csv")
+
+```
+
+# Creating Trait Matrix
+```{r trait matrix}
+## Summarize Accession Data by JepID to find the following variables
+# Total Seed Count
+# Total Seed Collections
+# Total Accessions
+# Total unique Cnddb EO indices
+
+accDat[,organismQuantity:=as.numeric(organismQuantity)]
+summAcc <- accDat[,.(collectionTypes=toString(sort(unique(basisofRecord))),totalSeed=sum((organismQuantity),na.rm=T), totalSeedCollections=sum(1*(basisofRecord=="Seed")),totalColl=.N, uniqueEOs = toString(unique(cnddbEOIndex))),by="taxonID"]
+summAcc[,uniqueEOs:=ifelse(uniqueEOs=="NA", 0,str_count(uniqueEOs,",")+1)]
+
+# Merge summary onto species and CNPS
+summAccwithSpp <- merge(spp,summAcc,by.y="taxonID",by.x="JepID",all.x=T)
+summAccwithSpp <- merge(summAccwithSpp,cnps,by="JepID",all.x=T)
+
+```
+
+# Match Traits to Tree
+
+```{r matching traits to tree}
+
+# Ensuring trait matrix order matches the phylogenetic tree order 
+trait_matrix <- trait_matrix[phy_coll3$tip.label,]
+
+# Creating a data object that matches the tree and the traits (only including T50 and GP)
+MatchDataObj= match.phylo.data(phy_coll3, trait_matrix[,c(1,2,5,6)])
+
+
+```
+
+# Filtering by Traits
