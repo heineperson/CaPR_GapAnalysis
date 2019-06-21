@@ -202,7 +202,16 @@ I specified that Abies magnifica var. magnifica and var. shastensis are relative
 
 abiesBound <- bind.relative(Spp1[genus=="Abies"])
 result_california_treeV_abies<- phylo.maker(sp.list=abiesBound$species.list, tree=abiesBound$phylo, nodes=abiesBound$nodes.info) 
-plot(result_california_treeV_abies$scenario.3)
+
+# Working out how to nest subspecies within species
+exampleTree <- write.tree(result_california_treeV_abies$scenario.3)
+
+addSubSpecies <- function(infraList){
+    species <- word(infraList[1],1,2)
+return(species)
+    
+    
+    }
 
 ```
 
@@ -241,8 +250,16 @@ plot(abiesTreeMCMC)
 # simple_edge_scaling=TRUE)
 
 
+data(accipitridaeBasicPastis)
+pastis_main(accipitridaeBasicPastis, output_file="MrBayesData/AccipitridaeBasic.nexus")
+
+
 
 ```
+
+
+
+
 
 # Assembling the Phylogenetic Tree with V Phylomaker
 
