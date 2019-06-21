@@ -207,11 +207,17 @@ result_california_treeV_abies<- phylo.maker(sp.list=abiesBound$species.list, tre
 exampleTree <- write.tree(result_california_treeV_abies$scenario.3)
 
 addSubSpecies <- function(infraList){
-    species <- word(infraList[1],1,2)
-return(species)
+  # Find the species you want to replace with infra species
+  species <- word(infraList[1],1,2,sep="_")
     
+  # Extract the branch length next to the species
+  branchLengh <- 
     
-    }
+}
+
+infraListAbies <- c("Abies_magnifica_var._magnifica","Abies_magnifica_var._shastensis")
+
+addSubSpecies(infraListAbies)
 
 ```
 
