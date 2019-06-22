@@ -12,7 +12,6 @@ library(ape)
 library(data.table)
 library(phytools)
 
-caliTree <- read.tree("Data/californiaTreewithInfraSpecies.tre")
 spOnlyTree <- read.tree("Data/result_california_speciesOnly.tre")
 accDat <- fread("Data/tblAccessionsCAPR_2019-Jun-21_1829.csv",na.strings=c("",NA,"NA"))
 spp <- fread("Data/tblSpeciesJepCAPR_2019-Jun-21_1946.csv")
@@ -43,8 +42,6 @@ summAccwithSpp <- merge(summAccwithSpp,cnps,by="JepID",all.x=T)
 Looping through all the species with infra species and replace the species level taxa with multiple infraspecies in the same clade.
 
 ```{r trait matrix}
-
-
 # Add _ to gsub
 summAccwithSpp[,name_minus_authors:=gsub(" ","_",name_minus_authors)]
 
@@ -80,8 +77,10 @@ newTree <- addSubSpecies(infraListtmp,newTree)
 
 }
 
+write.tree(newTree,"Data/caliTreeRevisedSubspeies06212019.tree")
+
 # What does it look like on the current tree when there is only one infra species
-pruned.treeDud<-drop.tip(newTree,newTree$tip.label[-which(grepl("Brickellia",newTree$tip.label))])
+pruned.treeDud<-drop.tip(newTree,newTree$tip.label[-which(grepl("Dudleya",newTree$tip.label))])
 plot(pruned.treeDud)
 
 ```

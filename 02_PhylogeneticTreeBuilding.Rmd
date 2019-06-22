@@ -320,10 +320,34 @@ result_california_speciesOnly <-  phylo.maker(sp.list=SpeicesOnlyBind$species.li
 Looping through all the species with infra species and replace the species level taxa with multiple infraspecies in the same clade.
 
 ```{r looping through infraspecies code}
-SppCopy[,species1:=gsub(" ","_",species)]
-InfraSummary <- SppCopy[SppCount>1 & (grepl("var.",species1,fixed=T)|grepl("subsp.",species1,fixed=T)),.(InfraString=toString(species1)) ,by="binomial"]
+# Reorganizing the pipeline
+spp <- fread("Data/tblSpeciesJepCAPR_2019-Jun-21_1946.csv")
 
+spp[,name_minus_authors:=gsub(" ","_",name_minus_authors)]
 
+# Sorting out which species have infra species
+spp[,binomial:=word(name_minus_authors,1,2,sep="_")]
+spp[,SppCount:=.N,by="binomial"]
+spp[,SppID:=1:.N,by="binomial"]
+spp[,infraSpp := toString(name_minus_authors[(grepl("var.",name_minus_authors,fixed=T)|grepl("subsp.",name_minus_authors,fixed=T))]),by="binomial"]
+
+# Asking which collected species have infra species but also binomial level names
+spp[, Reassign:=ifelse((binomial==name_minus_authors & SppCount>1 ), "Yes","No")]
+spp[Reassign=="Yes",.(binomial,infraSpp)]
+spp[grepl("var.",infraSpp,fixed=T),InfraType:="var."]
+spp[grepl("subsp.",infraSpp,fixed=T),InfraType:="subsp."]
+spp[grepl("subsp.",infraSpp,fixed=T) & grepl("var.",infraSpp,fixed=T),InfraType:="both"]
+
+# Fixing the one bad example
+spp[Reassign=="Yes"  & InfraType=="both", InfraType:="subsp."]
+
+# Specifying the name on the phylogeny for each species (different than the Jep ID)
+spp[,nameOnPhylogeny:=ifelse(Reassign=="Yes",paste(name_minus_authors,InfraType,species,sep="_"),name_minus_authors)]
+
+# Create object that can be looped through to add species
+InfraSummary <- spp[(infraSpp)!="",.(InfraString=toString(unique(nameOnPhylogeny))),by=c("binomial")]
+
+# Looping through the tree
 newTree <- result_california_speciesOnly$scenario.3
 for (i in 1:length(InfraSummary$binomial)){
 infraListtmp <- unlist(strsplit(InfraSummary$InfraString[i], split=", "))
@@ -344,6 +368,8 @@ plot(pruned.treeAbies)
 
 pruned.treeDud<-drop.tip(newTree,newTree$tip.label[-which(grepl("Dudleya",newTree$tip.label))])
 plot(pruned.treeDud)
+
+
 
 ```
 
