@@ -298,11 +298,11 @@ I plan to build a phylogeny for all species level taxa using phylomaker and then
 # Filtering for only species
 SppCopy <- SppVas1
 SppCopy[,binomial:=word(species,1,2)]
-SppCopy[grepl(" x ", species),binomial:=ifelse(str_count(species," ")==3,binomial,word(species,1,3,sep=" "))]
+SppCopy[grepl(" x ", species)|grepl(" X ", species),binomial:=ifelse(str_count(species," ")==3,binomial,word(species,1,3,sep=" "))]
 SppCopy[,SppCount:=.N,by="binomial"]
 SppCopy[,SppID:=1:.N,by="binomial"]
 SppOnly <- SppCopy[SppID==1]
-SppOnly[SppCount==1,species:=binomial]
+SppOnly[,species:=binomial]
 
 # Binding Relatives at the Genus Level
 SpeicesOnlyBind <- bind.relative(SppOnly)
@@ -311,8 +311,8 @@ SpeicesOnlyBind <- bind.relative(SppOnly)
 result_california_speciesOnly <-  phylo.maker(sp.list=SpeicesOnlyBind$species.list, tree=SpeicesOnlyBind$phylo, nodes=SpeicesOnlyBind$nodes.info) 
 
 # Writing data to the disc
- # write.tree(result_california_speciesOnly$scenario.3,"Data/result_california_speciesOnly.tre")
- # write.csv(result_california_speciesOnly$species.list,"Data/result_california_speciesOnly.csv")
+#  write.tree(result_california_speciesOnly$scenario.3,"Data/result_california_speciesOnly_20190627.tre")
+#  write.csv(result_california_speciesOnly$species.list,"Data/result_california_speciesOnly_20190627.csv")
 
 ```
 
@@ -352,14 +352,14 @@ Looping through all the species with infra species and replace the species level
 
 #########
 # Trying out new method without reinventing wheel
-SppCopy[,infraSpp := toString(species[(grepl("var.",species,fixed=T)|grepl("subsp.",species,fixed=T)|grepl(" x ",species,fixed=T))]),by="binomial"]
+SppCopy[,infraSpp := toString(species[(grepl("var.",species,fixed=T)|grepl("subsp.",species,fixed=T)|grepl(" x ",species,fixed=T)|grepl(" X ",species,fixed=T))]),by="binomial"]
 
 # Asking which collected species have infra species but also binomial level names
 SppCopy[, Reassign:=ifelse((binomial==species & SppCount>1 ), "Yes","No")]
 SppCopy[Reassign=="Yes",.(binomial,infraSpp)]
 SppCopy[grepl("var.",infraSpp,fixed=T),InfraType:="var."]
 SppCopy[grepl("subsp.",infraSpp,fixed=T),InfraType:="subsp."]
-SppCopy[grepl(" x ",infraSpp,fixed=T),InfraType:="x"]
+SppCopy[grepl(" x ",infraSpp,fixed=T)|grepl(" X ",infraSpp,fixed=T),InfraType:="x"]
 
 # Ensuring sub types don't exist (STILL NEED TO CHECK)
 SppCopy[grepl("subsp.",infraSpp,fixed=T) & grepl("var.",infraSpp,fixed=T),InfraType:="both"]

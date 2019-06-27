@@ -13,12 +13,34 @@ library(data.table)
 library(phytools)
 library(stringr)
 
-infraTree <- read.tree("Data/californiaTreewithInfraSpecies.tre")
-sppOnly <- read.tree("Data/result_california_speciesOnly.tre")
+
+# Species ONLY california phylogeny created in 02 code
+sppOnlyTree <- read.tree("Data/result_california_speciesOnly_20190627.tre")
+# California phylogeny with infraspecies created in 02 code
+infraTree <- read.tree("Data/californiaTreewithInfraSpecies_20190626.tre")
+# Accessions Data
 accDat <- fread("Data/tblAccessionsCAPR_2019-Jun-21_1829.csv",na.strings=c("",NA,"NA"))
+accDat[,organismQuantity:=as.numeric(organismQuantity)]
+accDat <- accDat[Deaccession==0]
+
 # Generated from script in 02
-spp <- fread("Data/spp_withNameOnPhylogeny.csv")
+spp <- fread("Data/spp_withNameOnPhylogeny_20190626.csv")
+# Species tables from DB
+allJepSpecies <- fread("Data/tblSpeciesJepCAPR_2019-Jun-27_1654.csv")
 cnps <- fread("Data/tblCNPSRanks_2019-Jun-21_1830.csv")
+
+# Looking at the tip.labels that aren't in the spp list
+tipLablesInfraTree <- as.data.table(infraTree$tip.label)
+spp[!(nameOnPhylogeny%in%tipLablesInfraTree$V1)]
+
+# Need to connect name on phylogeny to Jep ID so that we can get the CNPS ranks
+sppJep <- merge(spp, allJepSpecies[,.(JepID,name_minus_authors,endemicity)],by.x="species",by.y="name_minus_authors",all.x=T)
+sppJep <- merge(sppJep,cnps, by="JepID",all=T)
+
+# Merge summary onto species and CNPS
+AccwithSpp <- merge(sppJep,accDat,by.y="taxonID",by.x="JepID",all.x=T)
+
+
 ```
 
 # Data Summary
@@ -29,25 +51,14 @@ cnps <- fread("Data/tblCNPSRanks_2019-Jun-21_1830.csv")
 # Total Accessions
 # Total unique Cnddb EO indices
 
-accDat[,organismQuantity:=as.numeric(organismQuantity)]
-
-# Merge summary onto species and CNPS
-AccwithSpp <- merge(spp,accDat,by.y="taxonID",by.x="JepID",all.x=T)
-AccwithSpp <- merge(AccwithSpp,cnps,by="JepID",all.x=T)
 
 
-summAcc <- AccwithSpp[,.(collectionTypes=toString(sort(unique(basisofRecord))),totalSeed=sum((organismQuantity),na.rm=T), totalSeedCollections=sum(1*(basisofRecord=="Seed")),totalColl=.N, 
+
+summAcc <- AccwithSpp[,.(collectionTypes=toString(sort(unique(basisofRecord))),totalSeed=sum((organismQuantity),na.rm=T), totalSeedCollections=sum(1*(basisofRecord=="Seed")),totalColl=sum(1*(!is.na(eventID))), 
 uniqueEOs = toString(unique(cnddbEOIndex)),family=family[1],genus=genus[1]),by="nameOnPhylogeny"]
 summAcc[,uniqueEOs:=ifelse(uniqueEOs=="NA", 0,str_count(uniqueEOs,",")+1)]
 
 summAcc[!(nameOnPhylogeny%in%infraTree$tip.label),.(nameOnPhylogeny,family,genus)][order(nameOnPhylogeny)]
-
-pruned.treeAdiantum<-drop.tip(infraTree,infraTree$tip.label[-which(grepl("Adiantum",infraTree$tip.label))])
-plot(pruned.treeAdiantum)
-
-pruned.treeAnomobryum<-drop.tip(infraTree,infraTree$tip.label[-which(grepl("Quercus",infraTree$tip.label))])
-plot(pruned.treeAnomobryum)
-
 
 
 ```
@@ -58,14 +69,24 @@ plot(pruned.treeAnomobryum)
 ```{r matching traits to tree}
 
 # Making a matrix
-trait_matrix <- as.matrix(summAcc[,.(collectionTypes,totalSeed,totalSeedCollections,totalColl)])
-rownames(trait_matrix) <- summAccwithSpp$tip.label
+traitDT <- summAcc[!is.na(nameOnPhylogeny),.(nameOnPhylogeny,collectionTypes,totalSeed,totalSeedCollections,totalColl,family,genus)]
+traitDF<- data.frame(traitDT,row.names = traitDT$nameOnPhylogeny)
 
 # Ensuring trait matrix order matches the phylogenetic tree order 
-trait_matrix <- trait_matrix[infraTree$tip.label,]
+traitDF <- traitDF[infraTree$tip.label,]
 
 # Creating a data object that matches the tree and the traits (only including T50 and GP)
-MatchDataObj= match.phylo.data(phy_coll3, trait_matrix[,c(1,2,5,6)])
+MatchDataObj= match.phylo.data(infraTree, traitDF)
+
+
+pruned.treePhyrmaceae<-drop.tip(MatchDataObj$phy,MatchDataObj$phy$tip.label[-which(grepl("Phrymaceae",as.character(MatchDataObj$data$family)))])
+
+viewFamily <- function(family){
+  pruned.tree<-drop.tip(MatchDataObj$phy,MatchDataObj$phy$tip.label[-which(grepl(family,as.character(MatchDataObj$data$family)))])
+  plot(pruned.tree)
+}
+
+viewFamily("Poaceae")
 
 
 ```
