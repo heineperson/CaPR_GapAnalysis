@@ -83,7 +83,7 @@ traitDF <- traitDF[infraTree$tip.label,]
 MatchDataObj= match.phylo.data(infraTree, traitDF)
 
 # Write to the App Data folder
-saveRDS(MatchDataObj, "MatchDataObj.rds")
+# saveRDS(MatchDataObj, "caprPrioritizationApp/AppData/MatchDataObj.rds")
 
 # Example of how to filter family
 pruned.treePhyrmaceae<-drop.tip(MatchDataObj$phy,MatchDataObj$phy$tip.label[-which(grepl("Phrymaceae",as.character(MatchDataObj$data$family)))])
