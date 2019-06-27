@@ -15,7 +15,14 @@ ui <- fluidPage(
       radioButtons("fam", "Family:",
                    c("Fagaceae" = "Fagaceae",
                      "Phrymaceae" = "Phrymaceae",
-                     "Lamiaceae" = "Lamiaceae"))
+                     "Lamiaceae" = "Lamiaceae")),
+      
+      br(),
+      
+      autocomplete_input("famAuto", value='',label = 'Family',options=unique(MatchDataObj$data$family))
+      
+      
+      
     ),
     
     # Main panel for displaying outputs ----
