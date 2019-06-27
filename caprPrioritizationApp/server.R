@@ -1,13 +1,25 @@
 server <- function(input, output) {
   
+# Defining Reactive Filters
+  Filters <- reactive({
+    famFilter <- which(grepl(input$famAuto,as.character(MatchDataObj$data$family)))
+    countyFilter <- which(grepl(input$countyAuto,as.character(MatchDataObj$data$Counties)))
+    instFilter <- which(grepl(input$instInput,as.character(MatchDataObj$data$institutions)))
+    
+    filters <- Reduce(intersect, list(famFilter,countyFilter,instFilter))
+    return(filters)
+  })
+  
 # Creating Tree for Plotting that Filters by Family  
-  FamTree <- reactive({
-    pruned.tree<-drop.tip(MatchDataObj$phy,MatchDataObj$phy$tip.label[-which(grepl(input$famAuto,as.character(MatchDataObj$data$family)))])
-    return(pruned.tree) 
+  TreeFilter <- reactive({
+    # pruned.tree<-drop.tip(MatchDataObj$phy,MatchDataObj$phy$tip.label[-which(grepl(input$famAuto,as.character(MatchDataObj$data$family)))])
+    # return(pruned.tree) 
+    pruned.tree<-drop.tip(MatchDataObj$phy,MatchDataObj$phy$tip.label[-Filters()])
+    return(pruned.tree)
   })  
   
 # Creating Table that Filters by Family  
-   FamTable <- reactive({
+   SppTableFilter <- reactive({
      pruned.data<-subset(MatchDataObj$data, family==input$famAuto)
      return(pruned.data) 
    })
@@ -17,7 +29,7 @@ server <- function(input, output) {
   output$PlotGGTree <- renderPlot(
     # Expression
     {
-      phy2 <- FamTree()
+      phy2 <- TreeFilter()
       
       p <- ggtree(phy2,layout='rectangular') + geom_tiplab( size=3, color="black")
       #p <- p +geom_tippoint(aes(x=x+13), size=inputData$Count^(1/4),na.rm=T,colour="purple")
@@ -33,7 +45,13 @@ server <- function(input, output) {
 
 # Table output
   output$FilteredTable <- renderDataTable(
-    FamTable()
+    SppTableFilter()
   )
-}
+
+# Text Output
+  output$FilterText <- renderText(
+    Filters()
+  )
+  
+  }
 

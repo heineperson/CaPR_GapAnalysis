@@ -12,15 +12,22 @@ ui <- fluidPage(
     sidebarPanel(
       
       # Input: Select the random distribution type ----
-      radioButtons("fam", "Family:",
-                   c("Fagaceae" = "Fagaceae",
-                     "Phrymaceae" = "Phrymaceae",
-                     "Lamiaceae" = "Lamiaceae")),
-      
+      autocomplete_input("famAuto", value='',label = 'Family',options=unique(MatchDataObj$data$family)),
       br(),
-      
-      autocomplete_input("famAuto", value='',label = 'Family',options=unique(MatchDataObj$data$family))
-      
+      autocomplete_input("countyAuto", value='',label = 'County',options=unique(CountyCodes$CountyCode)),
+      br(),
+      selectInput("instInput","Primary Seed Bank:",c(
+        'Select'='',
+        "Rancho Santa Ana" = "RSA",
+        "San Diego Zoo" = "SDZG",
+        "Santa Barabara BG" = "SBBG",
+        "UC Santa Cruz" = "UCSC",
+        "UC Berkeley BG" = "UCB",
+        "Rae Selling Berry" = "BERR"
+      )
+      ),
+      br(),
+      textOutput("FilterText")
       
       
     ),
