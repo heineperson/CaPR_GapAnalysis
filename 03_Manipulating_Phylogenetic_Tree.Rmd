@@ -11,10 +11,13 @@ output: html_document
 library(ape)
 library(data.table)
 library(phytools)
+library(stringr)
 
-spOnlyTree <- read.tree("Data/result_california_speciesOnly.tre")
+infraTree <- read.tree("Data/californiaTreewithInfraSpecies.tre")
+sppOnly <- read.tree("Data/result_california_speciesOnly.tre")
 accDat <- fread("Data/tblAccessionsCAPR_2019-Jun-21_1829.csv",na.strings=c("",NA,"NA"))
-spp <- fread("Data/tblSpeciesJepCAPR_2019-Jun-21_1946.csv")
+# Generated from script in 02
+spp <- fread("Data/spp_withNameOnPhylogeny.csv")
 cnps <- fread("Data/tblCNPSRanks_2019-Jun-21_1830.csv")
 ```
 
@@ -27,70 +30,39 @@ cnps <- fread("Data/tblCNPSRanks_2019-Jun-21_1830.csv")
 # Total unique Cnddb EO indices
 
 accDat[,organismQuantity:=as.numeric(organismQuantity)]
-summAcc <- accDat[,.(collectionTypes=toString(sort(unique(basisofRecord))),totalSeed=sum((organismQuantity),na.rm=T), totalSeedCollections=sum(1*(basisofRecord=="Seed")),totalColl=.N, 
-uniqueEOs = toString(unique(cnddbEOIndex))),by="taxonID"]
-summAcc[,uniqueEOs:=ifelse(uniqueEOs=="NA", 0,str_count(uniqueEOs,",")+1)]
 
 # Merge summary onto species and CNPS
-summAccwithSpp <- merge(spp,summAcc,by.y="taxonID",by.x="JepID",all.x=T)
-summAccwithSpp <- merge(summAccwithSpp,cnps,by="JepID",all.x=T)
+AccwithSpp <- merge(spp,accDat,by.y="taxonID",by.x="JepID",all.x=T)
+AccwithSpp <- merge(AccwithSpp,cnps,by="JepID",all.x=T)
+
+
+summAcc <- AccwithSpp[,.(collectionTypes=toString(sort(unique(basisofRecord))),totalSeed=sum((organismQuantity),na.rm=T), totalSeedCollections=sum(1*(basisofRecord=="Seed")),totalColl=.N, 
+uniqueEOs = toString(unique(cnddbEOIndex)),family=family[1],genus=genus[1]),by="nameOnPhylogeny"]
+summAcc[,uniqueEOs:=ifelse(uniqueEOs=="NA", 0,str_count(uniqueEOs,",")+1)]
+
+summAcc[!(nameOnPhylogeny%in%infraTree$tip.label),.(nameOnPhylogeny,family,genus)][order(nameOnPhylogeny)]
+
+pruned.treeAdiantum<-drop.tip(infraTree,infraTree$tip.label[-which(grepl("Adiantum",infraTree$tip.label))])
+plot(pruned.treeAdiantum)
+
+pruned.treeAnomobryum<-drop.tip(infraTree,infraTree$tip.label[-which(grepl("Quercus",infraTree$tip.label))])
+plot(pruned.treeAnomobryum)
+
+
 
 ```
 
-# Adding Infra Species to the Tree
-
-Looping through all the species with infra species and replace the species level taxa with multiple infraspecies in the same clade.
-
-```{r trait matrix}
-# Add _ to gsub
-summAccwithSpp[,name_minus_authors:=gsub(" ","_",name_minus_authors)]
-
-# Sorting out which species have infra species
-summAccwithSpp[,binomial:=word(name_minus_authors,1,2,sep="_")]
-summAccwithSpp[,SppCount:=.N,by="binomial"]
-summAccwithSpp[,SppID:=1:.N,by="binomial"]
-summAccwithSpp[,infraSpp := toString(name_minus_authors[(grepl("var.",name_minus_authors,fixed=T)|grepl("subsp.",name_minus_authors,fixed=T))]),by="binomial"]
-
-# Asking which collected species have infra species but also binomial level names
-summAccwithSpp[, Reassign:=ifelse((binomial==name_minus_authors & SppCount>1 ), "Yes","No")]
-summAccwithSpp[Reassign=="Yes",.(binomial,SppCount,totalColl,collectionTypes,infraSpp)]
-summAccwithSpp[grepl("var.",infraSpp,fixed=T),InfraType:="var."]
-summAccwithSpp[grepl("subsp.",infraSpp,fixed=T),InfraType:="subsp."]
-summAccwithSpp[grepl("subsp.",infraSpp,fixed=T) & grepl("var.",infraSpp,fixed=T),InfraType:="both"]
-
-
-summAccwithSpp[Reassign=="Yes"  & InfraType=="both",.(binomial,SppCount,totalColl,collectionTypes,infraSpp)]
-# Fixing the one bad example
-summAccwithSpp[Reassign=="Yes"  & InfraType=="both", InfraType:="subsp."]
-
-# Specifying the name on the phylogeny for each species (different than the Jep ID)
-summAccwithSpp[,nameOnPhylogeny:=ifelse(Reassign=="Yes",paste(name_minus_authors,InfraType,species,sep="_"),name_minus_authors)]
-
-# Create object that can be looped through to add species
-InfraSummary <- summAccwithSpp[(infraSpp)!="",.(InfraString=toString(unique(nameOnPhylogeny))),by=c("binomial")]
-
-newTree <- spOnlyTree
-for (i in 1:length(InfraSummary$binomial)){
-infraListtmp <- unlist(strsplit(InfraSummary$InfraString[i], split=", "))
-print(infraListtmp)
-newTree <- addSubSpecies(infraListtmp,newTree)
-
-}
-
-write.tree(newTree,"Data/caliTreeRevisedSubspeies06212019.tree")
-
-# What does it look like on the current tree when there is only one infra species
-pruned.treeDud<-drop.tip(newTree,newTree$tip.label[-which(grepl("Dudleya",newTree$tip.label))])
-plot(pruned.treeDud)
-
-```
 
 # Match Traits to Tree
 
 ```{r matching traits to tree}
 
+# Making a matrix
+trait_matrix <- as.matrix(summAcc[,.(collectionTypes,totalSeed,totalSeedCollections,totalColl)])
+rownames(trait_matrix) <- summAccwithSpp$tip.label
+
 # Ensuring trait matrix order matches the phylogenetic tree order 
-trait_matrix <- trait_matrix[phy_coll3$tip.label,]
+trait_matrix <- trait_matrix[infraTree$tip.label,]
 
 # Creating a data object that matches the tree and the traits (only including T50 and GP)
 MatchDataObj= match.phylo.data(phy_coll3, trait_matrix[,c(1,2,5,6)])
