@@ -12,6 +12,7 @@ library(ape)
 library(data.table)
 library(phytools)
 library(stringr)
+library(caper)
 
 
 # Species ONLY california phylogeny created in 02 code
@@ -52,8 +53,6 @@ AccwithSpp <- merge(sppJep,accDat,by.y="taxonID",by.x="JepID",all.x=T)
 # Total unique Cnddb EO indices
 
 
-
-
 summAcc <- AccwithSpp[,.(collectionTypes=toString(sort(unique(basisofRecord))),totalSeed=sum((organismQuantity),na.rm=T), totalSeedCollections=sum(1*(basisofRecord=="Seed")),totalColl=sum(1*(!is.na(eventID))), 
 uniqueEOs = toString(unique(cnddbEOIndex)),family=family[1],genus=genus[1]),by="nameOnPhylogeny"]
 summAcc[,uniqueEOs:=ifelse(uniqueEOs=="NA", 0,str_count(uniqueEOs,",")+1)]
@@ -70,6 +69,11 @@ summAcc[!(nameOnPhylogeny%in%infraTree$tip.label),.(nameOnPhylogeny,family,genus
 
 # Making a matrix
 traitDT <- summAcc[!is.na(nameOnPhylogeny),.(nameOnPhylogeny,collectionTypes,totalSeed,totalSeedCollections,totalColl,family,genus)]
+traitDT[is.na(totalSeedCollections),totalSeedCollections:=0]
+# YesNo Variables
+traitDT[,AnyCollYN:=ifelse(totalColl==0,0,1)]
+traitDT[,SeedCollYN:=ifelse(totalSeedCollections==0,0,1)]
+# Makea dataframe with row labels
 traitDF<- data.frame(traitDT,row.names = traitDT$nameOnPhylogeny)
 
 # Ensuring trait matrix order matches the phylogenetic tree order 
@@ -78,16 +82,28 @@ traitDF <- traitDF[infraTree$tip.label,]
 # Creating a data object that matches the tree and the traits (only including T50 and GP)
 MatchDataObj= match.phylo.data(infraTree, traitDF)
 
+# Write to the App Data folder
+saveRDS(MatchDataObj, "MatchDataObj.rds")
 
+# Example of how to filter family
 pruned.treePhyrmaceae<-drop.tip(MatchDataObj$phy,MatchDataObj$phy$tip.label[-which(grepl("Phrymaceae",as.character(MatchDataObj$data$family)))])
 
+# Filter by family
 viewFamily <- function(family){
   pruned.tree<-drop.tip(MatchDataObj$phy,MatchDataObj$phy$tip.label[-which(grepl(family,as.character(MatchDataObj$data$family)))])
   plot(pruned.tree)
 }
 
+
+# Testing for phylogenetic signal in binary trait
+# objPhySeedCOll <- phylo.d(MatchDataObj$data, MatchDataObj$phy, names.col=nameOnPhylogeny, binvar=SeedCollYN, permut = 1000)
+
+
+# Look at Grasses
 viewFamily("Poaceae")
 
+# Look at Oaks
+viewFamily("Fagaceae")
 
 ```
 
