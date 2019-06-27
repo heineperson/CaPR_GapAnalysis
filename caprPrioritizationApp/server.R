@@ -7,20 +7,19 @@ server <- function(input, output) {
     instFilter <- which(grepl(input$instInput,as.character(MatchDataObj$data$institutions)))
     
     filters <- Reduce(intersect, list(famFilter,countyFilter,instFilter))
+    #filters <- Reduce(intersect, list(famFilter,instFilter))
     return(filters)
   })
   
 # Creating Tree for Plotting that Filters by Family  
   TreeFilter <- reactive({
-    # pruned.tree<-drop.tip(MatchDataObj$phy,MatchDataObj$phy$tip.label[-which(grepl(input$famAuto,as.character(MatchDataObj$data$family)))])
-    # return(pruned.tree) 
     pruned.tree<-drop.tip(MatchDataObj$phy,MatchDataObj$phy$tip.label[-Filters()])
     return(pruned.tree)
   })  
   
 # Creating Table that Filters by Family  
    SppTableFilter <- reactive({
-     pruned.data<-subset(MatchDataObj$data, family==input$famAuto)
+     pruned.data<-MatchDataObj$data[Filters(),]
      return(pruned.data) 
    })
   
@@ -50,7 +49,7 @@ server <- function(input, output) {
 
 # Text Output
   output$FilterText <- renderText(
-    Filters()
+    length(Filters())
   )
   
   }
