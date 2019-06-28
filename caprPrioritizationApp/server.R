@@ -2,9 +2,18 @@ server <- function(input, output) {
   
 # Defining Reactive Filters
   Filters <- reactive({
-    famFilter <- which(grepl(input$famAuto,as.character(MatchDataObj$data$family)))
-    countyFilter <- which(grepl(input$countyAuto,as.character(MatchDataObj$data$Counties)))
-    instFilter <- which(grepl(input$instInput,as.character(MatchDataObj$data$institutions)))
+    
+    # Filter table
+    FilterTable <- as.data.table(MatchDataObj$data)
+
+    # Apply filters
+    # FilterIndx <- FilterTable[family %in% input$famAuto &
+    #                            Counties %in% input$countyAuto &
+    #                            institutions %in% input$instInput, which=TRUE]
+    # 
+     famFilter <- which(MatchDataObj$data$family%in%input$famAuto)
+     countyFilter <- which(grepl(input$countyAuto,as.character(MatchDataObj$data$Counties)))
+     instFilter <- which(grepl(input$instInput,as.character(MatchDataObj$data$institutions)))
     
     filters <- Reduce(intersect, list(famFilter,countyFilter,instFilter))
     #filters <- Reduce(intersect, list(famFilter,instFilter))

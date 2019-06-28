@@ -12,7 +12,8 @@ ui <- fluidPage(
     sidebarPanel(
       
       # Input: Select the random distribution type ----
-      autocomplete_input("famAuto", value='',label = 'Family',options=unique(MatchDataObj$data$family)),
+      selectInput("famAuto","Family",choices=unique(MatchDataObj$data$family), selected='', multiple=TRUE),
+      #autocomplete_input("famAuto", value='',label = 'Family',options=unique(MatchDataObj$data$family)),
       br(),
       autocomplete_input("countyAuto", value='',label = 'County',options=unique(CountyCodes$CountyCode)),
       br(),
