@@ -15,7 +15,7 @@ ui <- fluidPage(
       selectInput("famAuto","Family",choices=unique(MatchDataObj$data$family), selected='', multiple=TRUE),
       #autocomplete_input("famAuto", value='',label = 'Family',options=unique(MatchDataObj$data$family)),
       br(),
-      selectInput("countyAuto", 'County',choices=unique(CountyCodes$CountyCode),selected='',multiple=TRUE),
+      selectInput("countyAuto", 'County',choices=c("",unique(CountyCodes$CountyCode)),selected=''),
       br(),
       selectInput("instInput","Primary Seed Bank:",c(
         "Select" = "",

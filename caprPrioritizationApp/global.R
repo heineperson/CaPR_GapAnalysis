@@ -24,9 +24,16 @@ MatchDataObj$data$AnyCollYN <- as.integer(MatchDataObj$data$AnyCollYN)-1
 #                                                              AnyCollYN = c("lightblue", "blue")),cex.lab=0.1)
 
 # 
-# famFilter <- which(MatchDataObj$data$family%in%c("Asteraceae"))
-# countyFilter <- which(MatchDataObj$data$Counties%in%c("LAS"))
-# #countyFilter <- which(grepl(input$countyAuto,as.character(MatchDataObj$data$Counties)))
-# instFilter <- which(grepl('',as.character(MatchDataObj$data$institutions)))
+# input <- NULL
+# input$Family <- c("Asteraceae","Fabaceae")
 # 
+# if(is.null(input$Family)){
+#   famFilter <- seq(1,length(MatchDataObj$data$family))
+#   }else{
+#   famFilter <- which(MatchDataObj$data$family%in%input$Family)
+# }
+#  countyFilter <- which(MatchDataObj$data$Counties%in%c(""))
+# # #countyFilter <- which(grepl(input$countyAuto,as.character(MatchDataObj$data$Counties)))
+#  instFilter <- which(grepl('SDZG',as.character(MatchDataObj$data$institutions)))
+# # 
 # filters <- Reduce(intersect, list(famFilter,countyFilter,instFilter))

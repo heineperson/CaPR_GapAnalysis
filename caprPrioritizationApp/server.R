@@ -6,13 +6,29 @@ server <- function(input, output) {
     # Filter table
     #FilterTable <- as.data.table(MatchDataObj$data)
 
-     famFilter <- which(MatchDataObj$data$family%in%input$famAuto)
-     countyFilter <- which(MatchDataObj$data$Counties%in%input$countyAuto)
-     #countyFilter <- which(grepl(input$countyAuto,as.character(MatchDataObj$data$Counties)))
-     instFilter <- which(grepl(input$instInput,as.character(MatchDataObj$data$institutions)))
+     #famFilter <- which(MatchDataObj$data$family%in%input$famAuto)
+    
+    if(is.null(input$famAuto)){
+      famFilter <- seq(1,length(MatchDataObj$data$family))
+    }else{
+      famFilter <- which(MatchDataObj$data$family%in%input$famAuto)
+    }
+    
+    if(is.null(input$countyAuto)){
+      countyFilter <- seq(1,length(MatchDataObj$data$family))
+      }else{
+     countyFilter <- which(grepl(input$countyAuto,as.character(MatchDataObj$data$Counties)))
+     }
+
+    if(is.null(input$instInput)){
+      instFilter <- seq(1,length(MatchDataObj$data$institutions))
+    }else{
+      instFilter <- which(grepl(input$instInput,as.character(MatchDataObj$data$institutions)))
+    }
+    
     
     filters <- Reduce(intersect, list(famFilter,countyFilter,instFilter))
-    #filters <- Reduce(intersect, list(famFilter,countyFilter))
+    #filters <- Reduce(intersect, list(famFilter,instFilter))
     #filters <- famFilter
     #filters <- instFilter
     
