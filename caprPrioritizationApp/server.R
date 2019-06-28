@@ -4,20 +4,19 @@ server <- function(input, output) {
   Filters <- reactive({
     
     # Filter table
-    FilterTable <- as.data.table(MatchDataObj$data)
+    #FilterTable <- as.data.table(MatchDataObj$data)
 
-    # Apply filters
-    # FilterIndx <- FilterTable[family %in% input$famAuto &
-    #                            Counties %in% input$countyAuto &
-    #                            institutions %in% input$instInput, which=TRUE]
-    # 
      famFilter <- which(MatchDataObj$data$family%in%input$famAuto)
-     countyFilter <- which(grepl(input$countyAuto,as.character(MatchDataObj$data$Counties)))
+     countyFilter <- which(MatchDataObj$data$Counties%in%input$countyAuto)
+     #countyFilter <- which(grepl(input$countyAuto,as.character(MatchDataObj$data$Counties)))
      instFilter <- which(grepl(input$instInput,as.character(MatchDataObj$data$institutions)))
     
     filters <- Reduce(intersect, list(famFilter,countyFilter,instFilter))
-    #filters <- Reduce(intersect, list(famFilter,instFilter))
-    return(filters)
+    #filters <- Reduce(intersect, list(famFilter,countyFilter))
+    #filters <- famFilter
+    #filters <- instFilter
+    
+     return(filters)
   })
   
 # Creating Tree for Plotting that Filters by Family  
@@ -38,8 +37,14 @@ server <- function(input, output) {
     # Expression
     {
       phy2 <- TreeFilter()
+      dat <- MatchDataObj$data[MatchDataObj$data$nameOnPhylogeny%in%phy2$tip.label,]
       
-      p <- ggtree(phy2,layout='rectangular') + geom_tiplab( size=3, color="black")
+      p <- trait.plot(collapse.singles(phy2), dat, cols = list(SeedCollYN = c("pink", "red"), 
+                                                                   AnyCollYN = c("lightblue", "blue")),cex.lab=0.3)
+      
+      
+      
+      #p <- ggtree(phy2,layout='rectangular') + geom_tiplab( size=3, color="black")
       #p <- p +geom_tippoint(aes(x=x+13), size=inputData$Count^(1/4),na.rm=T,colour="purple")
       #p <- gheatmapKT(p, CastCountObj_mat, color="black",low=c("yellow"), high = c("purple"),width=1,offset = 2, font.size=3,colnames_position="top") 
       #p <- p + annotate("text",x=22,size=2.5,y=length(inputData$Count)+1.5,label=input$PollinatorInputPhy2)

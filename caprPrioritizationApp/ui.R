@@ -15,10 +15,10 @@ ui <- fluidPage(
       selectInput("famAuto","Family",choices=unique(MatchDataObj$data$family), selected='', multiple=TRUE),
       #autocomplete_input("famAuto", value='',label = 'Family',options=unique(MatchDataObj$data$family)),
       br(),
-      autocomplete_input("countyAuto", value='',label = 'County',options=unique(CountyCodes$CountyCode)),
+      selectInput("countyAuto", 'County',choices=unique(CountyCodes$CountyCode),selected='',multiple=TRUE),
       br(),
       selectInput("instInput","Primary Seed Bank:",c(
-        'Select'='',
+        "Select" = "",
         "Rancho Santa Ana" = "RSA",
         "San Diego Zoo" = "SDZG",
         "Santa Barabara BG" = "SBBG",
