@@ -17,8 +17,9 @@ CountyCodes <- fread("AppData/tblCNPSCountyCodes_2019-Jun-21_1830.csv")
 # MatchDataObj$data[Reduce(intersect, list(famFilter,countyFilter,instFilter)),]
 
 
-MatchDataObj$data$SeedCollYN <- as.integer(MatchDataObj$data$SeedCollYN)-1
-MatchDataObj$data$AnyCollYN <- as.integer(MatchDataObj$data$AnyCollYN)-1
+MatchDataObj$data$AnyCollection <- as.integer(MatchDataObj$data$AnyCollection)-1
+MatchDataObj$data$InSeedCollection <- as.integer(MatchDataObj$data$InSeedCollection)-1
+MatchDataObj$data$InLivingCollection <- as.integer(MatchDataObj$data$InLivingCollection)-1
 
 # trait.plot(collapse.singles(MatchDataObj$phy), MatchDataObj$data, cols = list(SeedCollYN = c("pink", "red"), 
 #                                                              AnyCollYN = c("lightblue", "blue")),cex.lab=0.1)

@@ -56,7 +56,8 @@ AccwithSpp <- merge(sppJep,accDat,by.y="taxonID",by.x="JepID",all.x=T)
 summAcc <- AccwithSpp[,
                       .(collectionTypes=toString(sort(unique(basisofRecord))),
                         totalSeed=sum((organismQuantity),na.rm=T),
-                        totalSeedCollections=sum(1*(basisofRecord=="Seed")),
+                        totalSeedCollections=sum(1*(grepl("Seed",basisofRecord))),
+                        totalLivingCollections=sum(1*(grepl("Living",basisofRecord))),
                         totalColl=sum(1*(!is.na(eventID))), 
                         uniqueEOs = toString(unique(cnddbEOIndex)),
                         family=family[1],
@@ -78,11 +79,13 @@ summAcc[!(nameOnPhylogeny%in%infraTree$tip.label),.(nameOnPhylogeny,family,genus
 ```{r matching traits to tree}
 
 # Making a matrix
-traitDT <- summAcc[!is.na(nameOnPhylogeny),.(nameOnPhylogeny,collectionTypes,totalSeed,totalSeedCollections,totalColl,family,genus,institutions,CRPR,Counties)]
-traitDT[is.na(totalSeedCollections),totalSeedCollections:=0]
+traitDT <- summAcc[!is.na(nameOnPhylogeny),.(nameOnPhylogeny,collectionTypes,totalSeed,totalSeedCollections,totalLivingCollections,totalColl,family,genus,institutions,CRPR,Counties)]
+#traitDT[is.na(totalSeedCollections),totalSeedCollections:=0]
 # YesNo Variables
-traitDT[,AnyCollYN:=ifelse(totalColl==0,0,1)]
-traitDT[,SeedCollYN:=ifelse(totalSeedCollections==0,0,1)]
+traitDT[,AnyCollection:=ifelse(totalColl==0,0,1)]
+traitDT[,InSeedCollection:=ifelse(totalSeedCollections==0,0,1)]
+traitDT[,InLivingCollection:=ifelse(totalLivingCollections==0,0,1)]
+
 # Makea dataframe with row labels
 traitDF<- data.frame(traitDT,row.names = traitDT$nameOnPhylogeny)
 

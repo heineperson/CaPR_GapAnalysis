@@ -55,8 +55,8 @@ server <- function(input, output) {
       phy2 <- TreeFilter()
       dat <- MatchDataObj$data[MatchDataObj$data$nameOnPhylogeny%in%phy2$tip.label,]
       
-      p <- trait.plot(collapse.singles(phy2), dat, cols = list(SeedCollYN = c("pink", "red"), 
-                                                                   AnyCollYN = c("lightblue", "blue")),cex.lab=0.3)
+      p <- trait.plot(collapse.singles(phy2), dat, cols = list(InSeedCollection = c("pink", "red"), 
+                                                               InLivingCollection = c("lightblue", "blue")),cex.lab=0.3)
       
       
       
