@@ -2,8 +2,14 @@
 
 ui <- fluidPage(
   
+  
+  theme = shinytheme("sandstone"),
   # App title ----
-  titlePanel("Tabsets"),
+  titlePanel(""),
+  
+  navbarPage("Explorer Tools",  
+             
+  tabPanel("Phylogeny",
   
   # Sidebar layout with input and output definitions ----
   sidebarLayout(
@@ -11,7 +17,6 @@ ui <- fluidPage(
     # Sidebar panel for inputs ----
     sidebarPanel(
       
-      # Input: Select the random distribution type ----
       selectInput("famAuto","Family",choices=unique(MatchDataObj$data$family), selected='', multiple=TRUE),
       #autocomplete_input("famAuto", value='',label = 'Family',options=unique(MatchDataObj$data$family)),
       br(),
@@ -24,12 +29,9 @@ ui <- fluidPage(
         "Santa Barabara BG" = "SBBG",
         "UC Santa Cruz" = "UCSC",
         "UC Berkeley BG" = "UCB",
-        "Rae Selling Berry" = "BERR"
-      )
-      ),
+        "Rae Selling Berry" = "BERR")),
       br(),
       textOutput("FilterText")
-      
       
     ),
     
@@ -40,9 +42,13 @@ ui <- fluidPage(
       tabsetPanel(type = "tabs",
                   tabPanel("DendroGram", plotOutput("PlotGGTree"))
                   ,
-                  tabPanel("Table", dataTableOutput("FilteredTable"))
-      )
+                  tabPanel("Table", dataTableOutput("FilteredTable")))
       
-    )
+              )
+      )
+      ),
+
+  tabPanel("Location"
+    
   )
-)
+))
