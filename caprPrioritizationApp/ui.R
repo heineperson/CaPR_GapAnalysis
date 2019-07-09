@@ -46,9 +46,11 @@ ui <- fluidPage(
       
               )
       )
-      ),
-
-  tabPanel("Location"
-    
   )
+   #   ),
+
+#  tabPanel("Example Inputs",
+           
+    
+#  )
 ))
