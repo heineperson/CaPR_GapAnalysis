@@ -1,0 +1,136 @@
+---
+title: "04_RegionalParks_Synthesis"
+author: "Katie Heineman"
+date: "7/9/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(data.table)
+library(DT)
+library(stringr)
+library(lubridate)
+library(httr)
+library(RCurl)
+library(rjson)
+library(jsonlite)
+
+# Reading in Caspio Token
+source("Tokens/caspioSource.R")
+# Reading in caspio GET command (don't know if this works for things > 1000)
+source("caspioFunctions.R")
+
+
+# Getting more than 1000 rows! This is for the "LimitedRarePlantsView' that combines the Rare Plant Table and the NatureServe Table
+tableNew <- caspio_get_table("tblSpeciesJepCAPR",login1,1)
+TableCombined = NULL
+pagenumber=1
+
+while (dim(tableNew)[1]>0)
+{
+  pagenumber = pagenumber + 1
+  TableCombined <- rbind(TableCombined,tableNew)
+  tableNew <- caspio_get_table("tblSpeciesJepCAPR",login1,pagenumber)
+}
+
+SppJep <- TableCombined
+
+# Reading in Regioanl Parks Data
+RPBG <- fread("Data/regionalParksSpeciesListJan2019.csv",quote="",fill=T)
+
+# JepsonSynonyms
+jepsonSynonyms <- fread("Data/JepsonSynonyms2017.csv")
+
+```
+
+# Summarizing and adding species ot regional parks species list
+```{r regional parks species list}
+# Summarizing by jepson name and removing the variety and supressed names
+summRPBG <- RPBG[!(grepl("_",JepsonName)) & Supress!="X" & JepsonName!="" ,.(Count=.N),by="JepsonName"]
+
+# Make a scientificNameMatch
+summRPBG[,scientificNameMatch:=JepsonName]
+
+# Cleaning a few things
+summRPBG[,scientificNameMatch:=gsub('\\"',"",JepsonName)]
+summRPBG[,scientificNameMatch:=trimws(scientificNameMatch)]
+summRPBG[,scientificNameMatch:=gsub(" - Female plant","",scientificNameMatch)]
+summRPBG[,scientificNameMatch:=gsub(" - Male plant","",scientificNameMatch)]
+summRPBG[,scientificNameMatch:=gsub("  "," ",scientificNameMatch)]
+
+
+
+# Marking Hybrids
+summRPBG[ , nameType:=ifelse(grepl(" x ", scientificNameMatch),"hybrid","resolved nonhybrid")]
+
+# Marking things that are not specie level
+summRPBG[grepl(" sp.",scientificNameMatch,fixed=T) , nameType:="non-resolved"]
+summRPBG[scientificNameMatch%in%c("Arctostaphylos australis","Berberis claireae","Bolandera californica","Drymocallis ashlandica") , nameType:="non-resolved"]
+
+
+# Marking those that are not california
+summRPBG[JepsonName%in%c("Aesculus parryi","Amauria rotundifolia","Dudleya anthonyi"),nameType:="non California"]
+
+# Need to add to jepson list?
+summRPBG[JepsonName%in%c("Artemisia arbuscula subsp. thermopola"),nameType:="need to add"]
+
+# Replace Dipalcus with Mimulus for some species
+summRPBG[scientificNameMatch%in%c("Diplacus aurantiacus","Diplacus bigelovii","Diplacus douglasii","Diplacus layneae","Diplacus longiflorus","Diplacus mephiticus","Diplacus torreyi"),scientificNameMatch:=gsub("Diplacus ","Mimulus ",scientificNameMatch)]
+
+
+# Fixing errors
+summRPBG[scientificNameMatch=="Adenostema fasciculatum",scientificNameMatch:="Adenostoma fasciculatum"]
+summRPBG[grepl("Arctostaphylos patula",scientificNameMatch),scientificNameMatch:="Arctostaphylos patula"]
+summRPBG[scientificNameMatch=="Arctostaphylos peninsularis subsp. peninsularis",scientificNameMatch:="Arctostaphylos rainbowensis"]
+summRPBG[scientificNameMatch=="Arctostaphylos pringlei",scientificNameMatch:="Arctostaphylos pringlei subsp. drupacea"]
+summRPBG[grepl("Arctostaphylos uva-ursi",scientificNameMatch),scientificNameMatch:="Arctostaphylos uva-ursi"]
+summRPBG[scientificNameMatch=="Asyneum prenanthoides",scientificNameMatch:="Asyneuma prenanthoides"]
+summRPBG[grepl("Atriplex hymenolytra",scientificNameMatch),scientificNameMatch:="Atriplex hymenelytra"]
+summRPBG[scientificNameMatch=="Calochortus albus var. rubellus",scientificNameMatch:="Calochortus albus"]
+summRPBG[scientificNameMatch=="Ceanothus cuneatus var. rigidus f. albus",scientificNameMatch:="Ceanothus cuneatus var. rigidus"]
+summRPBG[scientificNameMatch=="Ceanothus papillosus var. roweanus",scientificNameMatch:="Ceanothus papillosus"]
+summRPBG[scientificNameMatch=="Circaea alpina",scientificNameMatch:="Circaea alpina subsp. pacifica"]
+summRPBG[scientificNameMatch=="Cercoparpus ledifolius var. intricatus",scientificNameMatch:="Cercocarpus ledifolius var. intricatus"]
+summRPBG[scientificNameMatch=="Delphinium hanseni",scientificNameMatch:="Delphinium hansenii"]
+summRPBG[scientificNameMatch=="Deschampsia danthoniodes",scientificNameMatch:="Deschampsia danthonioides"]
+summRPBG[scientificNameMatch=="Elymus trachycaulus subsp. subsecundum",scientificNameMatch:="Elymus trachycaulus subsp. trachycaulus"]
+summRPBG[scientificNameMatch=="Encelia actonii",scientificNameMatch:="Encelia actoni"]
+
+
+
+# Mergeing on Jepson List
+jepMerge <- merge(summRPBG,SppJep,by.x="scientificNameMatch",by.y="name_minus_authors",all.x=T)
+
+# Looking at those without JepIDs
+RPBGNA <- jepMerge[is.na(JepID) & nameType=="resolved nonhybrid"]
+
+
+# Matching synonyms
+synMatch <- merge(RPBGNA[,.(JepsonName,scientificNameMatch)],jepsonSynonyms[,.(JepAcceptedName,Synonym, JepID)],by.x = "scientificNameMatch", by.y = "Synonym")
+
+# Updating taxon keys
+setkey(synMatch,scientificNameMatch)
+setkey(jepMerge,scientificNameMatch)
+jepMerge[synMatch,`:=` (JepID=i.JepID)]
+
+# Looking agin at NAs
+RPBGNA <- jepMerge[is.na(JepID) & nameType=="resolved nonhybrid",.(JepsonName,scientificNameMatch,Count)]
+
+# Finding jepson names where species name matches infra name
+speciesInfraMatch <- SppJep[species==infraspecific_epithet]
+speciesInfraMatch[,binomial:=paste(genus,species)]
+
+# Merging infra onto this
+infraMatch<- merge(RPBGNA,speciesInfraMatch,by.x="scientificNameMatch",by.y="binomial",all.x=T)
+
+# Updating taxon keys
+setkey(infraMatch,scientificNameMatch)
+setkey(jepMerge,scientificNameMatch)
+jepMerge[infraMatch,`:=` (JepID=i.JepID)]
+
+# Looking agin at NAs
+jepMerge[is.na(JepID) & nameType=="resolved nonhybrid",.(JepsonName,scientificNameMatch,Count)][1:10,]
+
+
+
+```
