@@ -49,7 +49,7 @@ seedProSDZG <- TableCombinedSeedProSDZG
 
 
 ################## ################## ##################
-## Cleaninup maternal lines
+## Cleaning up maternal lines
 
 # Looking at maternal lines by institutions
 CaPRAcc[Deaccession==FALSE & grepl("Seed",basisofRecord),.(Count=.N),by=c("preparations","institutionCode")][order(preparations)]
@@ -66,13 +66,17 @@ setkey(CaPRAcc,tgermplasmIdentifier)
 setkey(summarySDZG,SeedAccessionID)
 CaPRAcc[summarySDZG,`:=`(preparations=i.preparations)]
 
-
-
 # Assigning data deficient to RSA seed lines that are NA or blank
 CaPRAcc[Deaccession==FALSE & grepl("Seed",basisofRecord) & institutionCode%in%c("RSA","SDZG","SBBG","UCB","BERR","UCSC") & (preparations=="NA"|preparations==''),preparations:="Data deficient" ]
-
 CaPRAcc[Deaccession==FALSE & grepl("Seed",basisofRecord),.(Count=.N),by=c("preparations","institutionCode")][order(preparations)]
 
+
+################## ################## ##################
+## Cleaning up provenance codes
+CaPRAcc[Deaccession==FALSE ,.(Count=.N),by=c("biologicalStatus","institutionCode","basisofRecord")][order(biologicalStatus)]
+
+CaPRAcc[!is.na(decimalLatitude) &  biologicalStatus=="", biologicalStatus:="presumed wild"]
+CaPRAcc[institutionCode%in%c("SBBG","UCB","UCSC","SDZG","BERR") & biologicalStatus=="",biologicalStatus:="Data deficient"]
 
 
 
