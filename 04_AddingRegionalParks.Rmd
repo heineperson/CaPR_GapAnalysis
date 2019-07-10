@@ -54,8 +54,9 @@ summRPBG[,scientificNameMatch:=JepsonName]
 # Cleaning a few things
 summRPBG[,scientificNameMatch:=gsub('\\"',"",JepsonName)]
 summRPBG[,scientificNameMatch:=trimws(scientificNameMatch)]
-summRPBG[,scientificNameMatch:=gsub(" - Female plant","",scientificNameMatch)]
-summRPBG[,scientificNameMatch:=gsub(" - Male plant","",scientificNameMatch)]
+summRPBG[,scientificNameMatch:=gsub(" - Female plant","",scientificNameMatch, ignore.case=T)]
+summRPBG[,scientificNameMatch:=gsub(" - Male plant","",scientificNameMatch,ignore.case=T)]
+summRPBG[,scientificNameMatch:=gsub(" - Low-mounding form","",scientificNameMatch,ignore.case=T)]
 summRPBG[,scientificNameMatch:=gsub("  "," ",scientificNameMatch)]
 
 
@@ -65,18 +66,19 @@ summRPBG[ , nameType:=ifelse(grepl(" x ", scientificNameMatch),"hybrid","resolve
 
 # Marking things that are not specie level
 summRPBG[grepl(" sp.",scientificNameMatch,fixed=T) , nameType:="non-resolved"]
-summRPBG[scientificNameMatch%in%c("Arctostaphylos australis","Berberis claireae","Bolandera californica","Drymocallis ashlandica") , nameType:="non-resolved"]
+summRPBG[scientificNameMatch%in%c("Arctostaphylos australis","Berberis claireae","Bolandera californica","Drymocallis ashlandica","Eriogonum encelioides","Eriogonum molle","Eriogonum pondii","Arctostaphylos stanfordiana \xd4Fred Oehler\xd5","Euphorbia tomentulosa","Iris hybrid","Juniperus communis var. saxatilis \xd4Gold Beach\xd5","Juniperus communis var. saxatilis \xd4Point St. George\xd5","Sequoia sempervirens - Moon Tree","Ribes viburnifolium \xd4Bart\xd5s Baja Beauty\xd5","Ribes viburnifolium \xd4Spooner\xd5s Mesa\xd5","Festuca subulifera","Ivesia pickeringia","Pellaea andromedifolia var. pubescens","Potentilla brucea","Rosa californica orthacantha/bolanderi variant","Malva pacifica","Stipa stilmanii","Viburnum edule") , nameType:="non-resolved"]
 
 
 # Marking those that are not california
-summRPBG[JepsonName%in%c("Aesculus parryi","Amauria rotundifolia","Dudleya anthonyi"),nameType:="non California"]
+summRPBG[JepsonName%in%c("Aesculus parryi","Amauria rotundifolia","Dudleya anthonyi","Gambelia juncea","Harfordia macroptera var. galioides","Helianthus niveus subsp. niveus","Hesperocyparis guadalupensis","Holodiscus dumosus var. cedrorum","Lonicera utahensis","Lycium cooperii","Myrica gale","Penstemon cedrosensis","Ptelea aptera","Rhus lentii","Salvia chionopeplica","Sedum plumasanum","Senecio palmeri","Triteleia guadalupensis","Vachellia farnesiana","Viscainoa geniculata"),nameType:="non California"]
 
 # Need to add to jepson list?
-summRPBG[JepsonName%in%c("Artemisia arbuscula subsp. thermopola"),nameType:="need to add"]
+summRPBG[JepsonName%in%c("Artemisia arbuscula subsp. thermopola","Eriophyllum lanatum var. aphanactis","Oreostemma alpigenum"),nameType:="need to add"]
 
 # Replace Dipalcus with Mimulus for some species
 summRPBG[scientificNameMatch%in%c("Diplacus aurantiacus","Diplacus bigelovii","Diplacus douglasii","Diplacus layneae","Diplacus longiflorus","Diplacus mephiticus","Diplacus torreyi"),scientificNameMatch:=gsub("Diplacus ","Mimulus ",scientificNameMatch)]
 
+summRPBG[scientificNameMatch%in%c("Erythranthe dentatus","Erythranthe grandis","Erythranthe lewisii","Erythranthe primuloides","Erythranthe tilingii"),scientificNameMatch:=gsub("Erythranthe ","Mimulus ",scientificNameMatch)]
 
 # Fixing errors
 summRPBG[scientificNameMatch=="Adenostema fasciculatum",scientificNameMatch:="Adenostoma fasciculatum"]
@@ -95,7 +97,44 @@ summRPBG[scientificNameMatch=="Delphinium hanseni",scientificNameMatch:="Delphin
 summRPBG[scientificNameMatch=="Deschampsia danthoniodes",scientificNameMatch:="Deschampsia danthonioides"]
 summRPBG[scientificNameMatch=="Elymus trachycaulus subsp. subsecundum",scientificNameMatch:="Elymus trachycaulus subsp. trachycaulus"]
 summRPBG[scientificNameMatch=="Encelia actonii",scientificNameMatch:="Encelia actoni"]
-
+summRPBG[scientificNameMatch=="Equisetum hyemale var. affine",scientificNameMatch:="Equisetum hyemale subsp. affine"]
+summRPBG[scientificNameMatch=="Eriastrum densiflorum",scientificNameMatch:="Eriastrum densifolium"]
+summRPBG[scientificNameMatch=="Ericameria cuneata var cuneata",scientificNameMatch:="Ericameria cuneata var. cuneata"]
+summRPBG[scientificNameMatch=="Erigeron concinnus subsp. concinnus",scientificNameMatch:="Erigeron concinnus"]
+summRPBG[scientificNameMatch=="Eriophyllum confertiflorum subsp. confertiflorum",scientificNameMatch:="Eriophyllum confertiflorum"]
+summRPBG[scientificNameMatch=="Eucepahlus breweri",scientificNameMatch:="Eucephalus breweri"]
+summRPBG[scientificNameMatch=="Eucepahlus tomentellus",scientificNameMatch:="Eucephalus tomentellus"]
+summRPBG[scientificNameMatch=="Eurybia integrifolius",scientificNameMatch:="Eurybia integrifolia"]
+summRPBG[scientificNameMatch=="Geum triflorum",scientificNameMatch:="Geum triflorum var. ciliatum"]
+summRPBG[scientificNameMatch=="Heuchera alpestris",scientificNameMatch:="Heuchera parishii"]
+summRPBG[scientificNameMatch=="Heuchera merriami",scientificNameMatch:="Heuchera merriamii"]
+summRPBG[scientificNameMatch=="Horkelia clevelandii var. clevlandii",scientificNameMatch:="Horkelia clevelandii var. clevelandii"]
+summRPBG[scientificNameMatch=="Howellanthus dalesiana",scientificNameMatch:="Howellanthus dalesianus"]
+summRPBG[scientificNameMatch=="Iris longipetela",scientificNameMatch:="Iris longipetala"]
+summRPBG[scientificNameMatch=="Ivesia lycopodoides",scientificNameMatch:="Ivesia lycopodioides"]
+summRPBG[scientificNameMatch=="Ligusticum grayii",scientificNameMatch:="Ligusticum grayi"]
+summRPBG[scientificNameMatch=="Micranthes tolmei",scientificNameMatch:="Micranthes tolmiei"]
+summRPBG[scientificNameMatch=="Erythranthe guttata",scientificNameMatch:="Mimulus guttatus"]
+summRPBG[scientificNameMatch=="Erythranthe inodora",scientificNameMatch:="Mimulus moschatus"]
+summRPBG[scientificNameMatch=="Erythranthe moschata",scientificNameMatch:="Mimulus moschatus"]
+summRPBG[scientificNameMatch=="Erythranthe linearifolia",scientificNameMatch:="Mimulus primuloides var. linearifolius"]
+summRPBG[scientificNameMatch=="Nolina parryi subsp.wolfii",scientificNameMatch:="Nolina parryi subsp. wolfii"]
+summRPBG[scientificNameMatch=="Nuphar polysepalum",scientificNameMatch:="Nuphar polysepala"]
+summRPBG[scientificNameMatch=="Opuntia phaecantha",scientificNameMatch:="Opuntia phaeacantha"]
+summRPBG[scientificNameMatch=="Oreostemma alpigenum",scientificNameMatch:="Oreostemma alpigenum var. andersonii"]
+summRPBG[scientificNameMatch=="Pentagramma triangularis subsp. triangularis",scientificNameMatch:="Pentagramma triangularis"]
+summRPBG[scientificNameMatch=="Phragmites australis subsp. berlandieri",scientificNameMatch:="Phragmites australis"]
+summRPBG[scientificNameMatch=="Primula clevelandii var. gracile",scientificNameMatch:="Primula clevelandii var. gracilis"]
+summRPBG[scientificNameMatch=="Rosa woodsii subsp. gratissima",scientificNameMatch:="Rosa woodsii var. gratissima"]
+summRPBG[scientificNameMatch=="Rosa woodsii subsp. ultramontana",scientificNameMatch:="Rosa woodsii var. ultramontana"]
+summRPBG[scientificNameMatch=="Salvia dorrii subsp. incana",scientificNameMatch:="Salvia dorrii var. incana"]
+summRPBG[scientificNameMatch=="Salvia mojavensis",scientificNameMatch:="Salvia mohavensis"]
+summRPBG[scientificNameMatch=="Sanguisorba officinalis subsp. microcephala",scientificNameMatch:="Sanguisorba officinalis"]
+summRPBG[scientificNameMatch=="Sedum spathulifolium var. majus",scientificNameMatch:="Sedum spathulifolium"]
+summRPBG[scientificNameMatch=="Senecio flacidus var. monoensis",scientificNameMatch:="Senecio flaccidus var. monoensis"]
+summRPBG[scientificNameMatch=="Streptopus amplexifolius",scientificNameMatch:="Streptopus amplexifolius var. americanus"]
+summRPBG[scientificNameMatch=="Toxicoscordion venenosum subsp. venenosum",scientificNameMatch:="Toxicoscordion venenosum"]
+summRPBG[scientificNameMatch=="Triphysaria floribundus",scientificNameMatch:="Triphysaria floribunda"]
 
 
 # Mergeing on Jepson List
@@ -131,6 +170,21 @@ jepMerge[infraMatch,`:=` (JepID=i.JepID)]
 # Looking agin at NAs
 jepMerge[is.na(JepID) & nameType=="resolved nonhybrid",.(JepsonName,scientificNameMatch,Count)][1:10,]
 
+# summarizing again
+jepMergeSumm <- jepMerge[nameType=="resolved nonhybrid" & !is.na(JepID),.(scientificNameOriginal=toString(JepsonName)),by=c("scientificNameMatch","JepID")]
 
 
+```
+# Adding other fields
+
+```{r adding fields}
+
+jepMergeSumm[,institutionCode:="RPBG"]
+jepMergeSumm[,germplasmIdentifier:=paste0("RPBGspp-",.I)]
+jepMergeSumm[,basisofRecord:="Living"]
+jepMergeSumm[,biologicalStatus:="Data deficient"]
+jepMergeSumm[,occurrenceDetails:="This entry is based solely on the species list from Regional Parks"]
+
+
+write.csv(jepMergeSumm,'Data/jepMergeSumm_090702019.csv')
 ```
