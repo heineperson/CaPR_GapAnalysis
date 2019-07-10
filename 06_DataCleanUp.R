@@ -69,7 +69,7 @@ CaPRAcc[summarySDZG,`:=`(preparations=i.preparations)]
 
 
 # Assigning data deficient to RSA seed lines that are NA or blank
-CaPRAcc[Deaccession==FALSE & grepl("Seed",basisofRecord) & institutionCode%in%c("RSA","SDZG","SBBG","UCB") & (preparations=="NA"|preparations==''),preparations:="Data deficient" ]
+CaPRAcc[Deaccession==FALSE & grepl("Seed",basisofRecord) & institutionCode%in%c("RSA","SDZG","SBBG","UCB","BERR","UCSC") & (preparations=="NA"|preparations==''),preparations:="Data deficient" ]
 
 CaPRAcc[Deaccession==FALSE & grepl("Seed",basisofRecord),.(Count=.N),by=c("preparations","institutionCode")][order(preparations)]
 
