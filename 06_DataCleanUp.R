@@ -76,7 +76,16 @@ CaPRAcc[Deaccession==FALSE & grepl("Seed",basisofRecord),.(Count=.N),by=c("prepa
 CaPRAcc[Deaccession==FALSE ,.(Count=.N),by=c("biologicalStatus","institutionCode","basisofRecord")][order(biologicalStatus)]
 
 CaPRAcc[!is.na(decimalLatitude) &  biologicalStatus=="", biologicalStatus:="presumed wild"]
+CaPRAcc[!is.na(decimalLatitude) & institutionCode=="RSA" &  biologicalStatus=="cultivated", biologicalStatus:="presumed cultivated from wild source"]
 CaPRAcc[institutionCode%in%c("SBBG","UCB","UCSC","SDZG","BERR") & biologicalStatus=="",biologicalStatus:="Data deficient"]
+
+CaPRAcc[Deaccession==FALSE ,.(Count=.N),by=c("biologicalStatus","institutionCode","preparations")][order(biologicalStatus)]
+
+cleanUpData <- CaPRAcc[Deaccession==FALSE,.(eventID,biologicalStatus,basisofRecord)]
+
+write.csv(cleanUpData,"Data/cleanUpData_prov_prep.csv")
+
+
 
 
 
