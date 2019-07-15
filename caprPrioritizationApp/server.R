@@ -25,15 +25,26 @@ server <- function(input, output) {
     }else{
       instFilter <- which(grepl(input$instInput,as.character(MatchDataObj$data$institutions)))
     }
-    
-    
+
     filters <- Reduce(intersect, list(famFilter,countyFilter,instFilter))
-    #filters <- Reduce(intersect, list(famFilter,instFilter))
-    #filters <- famFilter
-    #filters <- instFilter
-    
      return(filters)
   })
+  
+# Venn diagram
+
+output$VennDiagram <- renderPlot(  {
+  #VenDat <- caprSppTable[input$rareRank%in%CRPR | input$rareRank%in%CRPR_simple,.(Count=.N),by="collectionTypes"]
+  VenDat <- caprSppTable[,.(Count=.N),by="collectionTypes"]
+  VenDat[,collectionTypes:=gsub(", ","&",collectionTypes,fixed=T)] 
+  VenVec <- VenDat$Count
+  names(VenVec) <- VenDat$collectionTypes
+  p <- plot(venneuler(VenVec))
+  
+  return(p)},
+  height=1000,
+  width=800
+)
+  
   
 # Creating Tree for Plotting that Filters by Family  
   TreeFilter <- reactive({
@@ -54,33 +65,42 @@ server <- function(input, output) {
     {
       phy2 <- TreeFilter()
       dat <- MatchDataObj$data[MatchDataObj$data$nameOnPhylogeny%in%phy2$tip.label,]
-      
       p <- trait.plot(collapse.singles(phy2), dat, cols = list(InSeedCollection = c("pink", "red"), 
                                                                InLivingCollection = c("lightblue", "blue")),cex.lab=0.3)
-      
-      
-      
+###########
       #p <- ggtree(phy2,layout='rectangular') + geom_tiplab( size=3, color="black")
       #p <- p +geom_tippoint(aes(x=x+13), size=inputData$Count^(1/4),na.rm=T,colour="purple")
       #p <- gheatmapKT(p, CastCountObj_mat, color="black",low=c("yellow"), high = c("purple"),width=1,offset = 2, font.size=3,colnames_position="top") 
       #p <- p + annotate("text",x=22,size=2.5,y=length(inputData$Count)+1.5,label=input$PollinatorInputPhy2)
       #p <- p + guides(fill=guide_legend(title="Proportion of Pollinator Observations"))
       #p <- p + theme(legend.title.align=0.5)
+      
       return(p)
     },
     height = 1000,
     width = 800
   )    
 
-# Table output
+# Table of Species in Collections Output
   output$FilteredTable <- renderDataTable(
     SppTableFilter()
   )
 
-# Text Output
+# Text of the Number of Obserations in a Filter
   output$FilterText <- renderText(
     length(Filters())
   )
+  
+# Create reactive model of seed phylogenetic signal
+   SeedPhyloModel <- reactive({
+      phylo.d(TreeFilter(),SppTableFilter(), names.col=nameOnPhylogeny, binvar=InSeedCollection, permut = 100, rnd.bias=NULL)
+   })
+  
+
+  output$PhyloDSummarySeed <- renderText(
+    paste("Phylogenetic Signal in Seed Collections:", round(SeedPhyloModel()$DEstimate)))
+      
+
   
   }
 
