@@ -12,7 +12,7 @@ server <- function(input, output) {
     if(is.null(input$countyAuto)){
       countyFilter <- seq(1,length(MatchDataObj$data$family))
       }else{
-     countyFilter <- which(grepl(input$countyAuto,as.character(MatchDataObj$data$Counties)))
+     countyFilter <- which(trimws(unlist(strsplit(as.character(MatchDataObj$data$Counties), ",")))%in% trimws(unlist(strsplit(input$countyAuto, ","))))
      }
 
     if(is.null(input$instInput)){
@@ -33,7 +33,7 @@ server <- function(input, output) {
   
 # Creating Table that Filters by Family  
    SppTableFilter <- reactive({
-     pruned.data<-as.data.table(MatchDataObj$data)[,.(nameOnPhylogeny,CRPR, evolDist,InSeedCollection, InLivingCollection)][Filters()]
+     pruned.data<-(MatchDataObj$data)[Filters(),]
      return(pruned.data) 
    })
   
@@ -50,7 +50,7 @@ server <- function(input, output) {
       p <- trait.plot(collapse.singles(phy2), dat, cols = list(InSeedCollection = c("pink", "red"), 
                                                                InLivingCollection = c("lightblue", "blue")),
                                                     str = list(c("No","Yes"),c("No","Yes")),
-                                              cex.lab=0.3,cex.legend=2)
+                                              cex.lab=input$sliderTextSize,cex.legend=2)
       
       #  
       # treeTibble <- as_tibble(phy2)
@@ -91,7 +91,7 @@ server <- function(input, output) {
 
 # Table of Species in Collections Output
   output$FilteredTable <- renderDataTable(
-    SppTableFilter()
+    as.data.table(SppTableFilter())[,.(nameOnPhylogeny,CRPR, evolDist,InSeedCollection, InLivingCollection)]
   )
 
 # Text of the Number of Obserations in a Filter
@@ -121,7 +121,7 @@ server <- function(input, output) {
     
     # Writing the phylogenetic signal statistic
     output$PhyloDSummaryLiving <- renderText(
-      paste("Phylogenetic Signal in Living Collections:", round(LivingPhyloModel()$DEstimate,digits=2)))
+      paste("Phylogenetic Signal in Living Collections:", round(LivingPhyloModel()$DEstimate,digits=2), "P Value (Brownian motion):", ))
   })
   
   

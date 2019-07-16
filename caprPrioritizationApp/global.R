@@ -25,6 +25,11 @@ MatchDataObj$data$AnyCollection <- as.integer(MatchDataObj$data$AnyCollection)-1
 MatchDataObj$data$InSeedCollection <- as.integer(MatchDataObj$data$InSeedCollection)-1
 MatchDataObj$data$InLivingCollection <- as.integer(MatchDataObj$data$InLivingCollection)-1
 
+
+objSeed <- phylo.d(MatchDataObj$data[,c(1,13,14)], MatchDataObj$phy, names.col=nameOnPhylogeny, binvar=InSeedCollection, permut = 100, rnd.bias=NULL)
+objLiving <- phylo.d(MatchDataObj$data[,c(1,13,14)], MatchDataObj$phy, names.col=nameOnPhylogeny, binvar=InLivingCollection, permut = 1000, rnd.bias=NULL)
+
+
 # Calcalculate evoluationary distinctiveness for each species
 # EvDist <- evol.distinct(MatchDataObj$phy, type = c("equal.splits", "fair.proportion"),
 #               scale = FALSE, use.branch.lengths = TRUE)
@@ -100,8 +105,6 @@ caprSppTable[countTierOne>=5 & aggregateSeedCount>3000 & ecoRegionsCollected==Je
 caprSppTable[is.na(SppRank) & countTierOne>1 , SppRank:="PrettyGood"]
 caprSppTable[SppRank=="PrettyGood"]
 
-#objSeed <- phylo.d(MatchDataObj$data, MatchDataObj$phy, names.col=nameOnPhylogeny, binvar=InSeedCollection, permut = 100, rnd.bias=NULL)
-#objLiving <- phylo.d(MatchDataObj$data, MatchDataObj$phy, names.col=nameOnPhylogeny, binvar=InLivingCollection, permut = 100, rnd.bias=NULL)
 
 #
 #   VenDat <- caprSppTable[,.(Count=.N),by="collectionTypes"]
