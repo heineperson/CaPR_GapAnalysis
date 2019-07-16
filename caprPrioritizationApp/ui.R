@@ -11,7 +11,7 @@ ui <- fluidPage(
 most recent seed plant megatree available from Smith & Brown 2018 phylogeny, which used the Open Tree of Life
 project to generate a tree with 79,881 plant taxa. Species that were not in this phylogeny I added to the closest genus or species nodes."),
                h3("Phylogenetic Signal"),
-               p("I calculated phylogenetic signal for presence/absence of seed and living collections of the phylogeny using the phylo.d function in the caper package. For this metric, 0=no signal, 1 = completely determined by phylogency. Somewhat surprisingly, there is greater phylogency in seed collections (0.83) compared to living collections (0.56), perhaps reflecting phylogenetic signal in 
+               p("I calculated phylogenetic signal for presence/absence of seed and living collections of the phylogeny using the phylo.d function in the caper package. For this metric, 0=no signal, 1 = completely determined by phylogency. Somewhat surprisingly, there is greater phylogency in seed collections (0.83) compared to living collections (0.62), perhaps reflecting phylogenetic signal in 
                  non-orthodox seeds. You can use the tool below to calculate signal for pruned trees"),
                h3("Evolutionary Distinctiveness "),
                p("I used the picante package to calculate phylogenetic distinctiveness for each species. The values can be seen in the table tab. These can ultimately be used in our prioritization"),
@@ -66,32 +66,75 @@ project to generate a tree with 79,881 plant taxa. Species that were not in this
       ),
 
   tabPanel("Collection Types",
-           sidebarLayout(
-             
-             # Sidebar panel for inputs ----
-             sidebarPanel(
-               selectInput("rareRank","Rare Plant Rank:",choices=c(
-                 "All Species" = "",
-                 "1B" = "1B",
-                 "2B" = "2B",
-                 "3" = "3",
-                 "4" = "4",
-                 "1B.1" = "1B.1"),multiple=TRUE),
-               tags$div(
-                  HTML("<p>Tier01 = Maternal Lines Seed Collections (and Specific Living Collections) of known wild origin</p>
-<p>Tier02 = Bulked (or unknown) Seed Collections of known wild origin</p>
-<p>Tier03 = Any seed collections of unknown origin</p>
-<p>Tier04 = Living Collections of known wild origin (possibly few individuals)</p>
-<p>Tier05 = Living Collection of unknown origin</p>
-<p></p>"))
-               
-             ),
-             mainPanel(
+           h2("Collection Categories"),
+           p("I create categories for our seed collections - they are based on the availability of provnance, locality, and seed processing information."),
+           h3("What do I need from RSA?"),
+           p("Provance code update: the original template I was using didn't make a ton of sense - I think you probably have this info"),
+           h3("What do I need from SBBG?"),
+           p("Maternal Lines vs. Bulked for some collections, living collectiosn that qualify for conservation collections"),
+           h3("What do I need from UCB?"),
+           p("Seed Counts, Preparations (bulked vs. maternal lines), provenance (wild vs. cultivated), georeferencing info where possible, living collectiosn that qualify for conservation collections"),
+           h3("What do I need from UCSC?"),
+           p("Living collections if possible, preparations (bulked vs. maternal lines), seed counts"),
+           h3("What do I need from RPBG?"),
+           p("I added their species list for living collections but I need their actual accessions list"),
+           
+           
+           
                tabsetPanel(type = "tabs",
-                           tabPanel("Venn Diagram", plotOutput("VennDiagram")),
+                           tabPanel("Progress Graph", 
+                                    plotOutput("ProgressPlot",height=800,width=800)
+                                    ),
+                           tabPanel("Venn Diagram",sidebarLayout(
+                             
+                             # Sidebar panel for inputs ----
+                             sidebarPanel(
+                               selectInput("rareRank","Rare Plant Rank:",choices=c(
+                                 "All Species" = "",
+                                 "1B" = "1B",
+                                 "2B" = "2B",
+                                 "3" = "3",
+                                 "4" = "4",
+                                 "1B.1" = "1B.1"),multiple=TRUE)
+                             ),
+                             mainPanel(plotOutput("VennDiagram",height=800,width=800)))),
                            tabPanel("Table", dataTableOutput("VennTable"))
-             )   
+             
+)),
+
+tabPanel("Prioritization inputs",
+         h2("Coming soon!"),
+         p("We want to create something similar to the pieces tool where people can make inputs that rank the importance of each quality"),
+         sidebarLayout(
+           
+           # Sidebar panel for inputs ----
+           sidebarPanel(
+             h2("Collector Specific Inputs"),
+             selectInput("yourLocation","Enter Your Location:",c(
+               "Select" = "",
+               "Rancho Santa Ana" = "RSA",
+               "San Diego Zoo" = "SDZG",
+               "Santa Barabara BG" = "SBBG",
+               "UC Santa Cruz" = "UCSC",
+               "UC Berkeley BG" = "UCB",
+               "Rae Selling Berry" = "BERR")),
+             selectInput("countySample", 'Enter Counties You Prefer to Collect: ',choices=c("",unique(CountyCodes$CountyCode)),selected='',multiple=TRUE),
+             selectInput("ecoRegion", 'Enter EcoRegions You Prefer to Collect: ',choices=c("",unique(capr$JEP_REG)),selected='',multiple=TRUE),
+             h2("Rank these values 1-4"),
+             textInput("rarityRank","Importance of Rarity"),
+             textInput("locationRank","Importance of Nearness to Your Location"),
+             textInput("evoRank","Importance of Evolutionary Distinctness"),
+             textInput("collectionRank","Importance that Species Is Not Yet collected")
+             
+           ),
+           mainPanel(
+             h2("Outpus will be species and occurrences you should collect")
            )
-    
-  )
-)))
+         )
+         ),
+tabPanel("Maps",
+         h2("Coming soon!"),
+         p("I have extracted Jepson Regions for all the occurrences and accessions - need to visualize this"))
+
+
+))

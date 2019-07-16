@@ -104,24 +104,24 @@ server <- function(input, output) {
     
 # Create reactive model of seed phylogenetic signal
    SeedPhyloModel <- reactive({
-      phylo.d(TreeFilter(),SppTableFilter(), names.col=nameOnPhylogeny, binvar=InSeedCollection, permut = 100, rnd.bias=NULL)
+      phylo.d(TreeFilter(),SppTableFilter()[,c(1,13,14)], names.col=nameOnPhylogeny, binvar=InSeedCollection, permut = 100, rnd.bias=NULL)
    })
 
 # Writing the phylogenetic signal statistic
   output$PhyloDSummarySeed <- renderText(
-    paste("Phylogenetic Signal in Seed Collections:", round(SeedPhyloModel()$DEstimate,digits=2)))
+    paste("Phylogenetic Signal in Seed Collections:", round(SeedPhyloModel()$DEstimate,digits=2),"P Value (Brownian motion):",round(SeedPhyloModel()$Pval1,digits=2) ))
 })
   
   observeEvent(input$calculateLivingSignal, {
     
     # Create reactive model of seed phylogenetic signal
    LivingPhyloModel <- reactive({
-      phylo.d(TreeFilter(),SppTableFilter(), names.col=nameOnPhylogeny, binvar=InLivingCollection, permut = 100, rnd.bias=NULL)
+      phylo.d(TreeFilter(),SppTableFilter()[,c(1,13,14)], names.col=nameOnPhylogeny, binvar=InLivingCollection, permut = 100, rnd.bias=NULL)
     })
     
     # Writing the phylogenetic signal statistic
     output$PhyloDSummaryLiving <- renderText(
-      paste("Phylogenetic Signal in Living Collections:", round(LivingPhyloModel()$DEstimate,digits=2), "P Value (Brownian motion):", ))
+      paste("Phylogenetic Signal in Living Collections:", round(LivingPhyloModel()$DEstimate,digits=2), "P Value (Brownian motion):",round(LivingPhyloModel()$Pval1,digits=2) ))
   })
   
   
@@ -141,24 +141,39 @@ server <- function(input, output) {
       return(data) 
     })  
     
- # Table of Species in Venn Diagram
+# Collection Progress Barchar
+    
+    output$ProgressPlot <- renderPlot({
+      collectionTable <- caprSppTable[,.(Count=.N),by=c("topCollectionTypes","CRPR_simple")][order(CRPR_simple,topCollectionTypes)]
+      collectionTable[is.na(CRPR_simple),CRPR_simple:="Unranked"]
+      collectionTable$topCollectionTypes <- factor(collectionTable$topCollectionTypes, levels = c("06-Not Collected","05-Living Unknown", "04-Living Wild", "03-Seed Data Deficient", "02-Seed Bulked", "01-Maternal Lines And Wild"))
+      
+      p <- ggplot(data=collectionTable[CRPR_simple!="Unranked"],aes(x=CRPR_simple,y=Count,fill=topCollectionTypes))+geom_bar(stat="identity",colour="black")
+      p <- p + theme_bw()
+      p <- p +   scale_fill_manual(values=c("grey", "orchid2", "orchid4", "palegreen1", "palegreen3","palegreen4")) 
+      p <- p + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+      p <- p +  theme(axis.text.x=element_text(size=14,face="bold",angle=25,hjust=1,colour="black"),axis.text.y=element_text(size=14),
+                      axis.title=element_text(size=16,face="bold"),  plot.title = element_text(hjust = 0.5,size=18))
+      return(p) 
+    }
+     )
+    
+  
+ # Table of Species in Bar Chart
     output$VennTable <- renderDataTable(
-      SppVennFilter()
+      collectionTable
     )
     
     
 # Venn diagram of species collection type
   output$VennDiagram <- renderPlot(  {
-    VenDat <- SppVennFilter()[,.(Count=.N),by="collectionTypes"]
-    VenDat[,collectionTypes:=gsub(", ","&",collectionTypes,fixed=T)] 
+    VenDat <- SppVennFilter()[collectionTypesSeed!="Uncollected",.(Count=.N),by="collectionTypesSeed"]
+    VenDat[,collectionTypesSeed:=gsub(", ","&",collectionTypesSeed,fixed=T)] 
     VenVec <- VenDat$Count
-    names(VenVec) <-VenDat$collectionTypes
-    p <- plot(euler(VenVec),quantities=TRUE)
+    names(VenVec) <-VenDat$collectionTypesSeed
+    p <- plot(euler(VenVec),quantities=TRUE,main="Distribution of Species Among Seed Collection Types")
     
     return(p)}
-    ,
-    height=1000,
-    width=800
   )
   
 
