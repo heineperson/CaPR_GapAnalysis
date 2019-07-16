@@ -3,11 +3,6 @@ server <- function(input, output) {
 # Defining Reactive Filters
   Filters <- reactive({
     
-    # Filter table
-    #FilterTable <- as.data.table(MatchDataObj$data)
-
-     #famFilter <- which(MatchDataObj$data$family%in%input$famAuto)
-    
     if(is.null(input$famAuto)){
       famFilter <- seq(1,length(MatchDataObj$data$family))
     }else{
@@ -29,23 +24,7 @@ server <- function(input, output) {
     filters <- Reduce(intersect, list(famFilter,countyFilter,instFilter))
      return(filters)
   })
-  
-# Venn diagram
 
-output$VennDiagram <- renderPlot(  {
-  #VenDat <- caprSppTable[input$rareRank%in%CRPR | input$rareRank%in%CRPR_simple,.(Count=.N),by="collectionTypes"]
-  VenDat <- caprSppTable[,.(Count=.N),by="collectionTypes"]
-  VenDat[,collectionTypes:=gsub(", ","&",collectionTypes,fixed=T)] 
-  VenVec <- VenDat$Count
-  names(VenVec) <- VenDat$collectionTypes
-  p <- plot(venneuler(VenVec))
-  
-  return(p)},
-  height=1000,
-  width=800
-)
-  
-  
 # Creating Tree for Plotting that Filters by Family  
   TreeFilter <- reactive({
     pruned.tree<-drop.tip(MatchDataObj$phy,MatchDataObj$phy$tip.label[-Filters()])
@@ -54,32 +33,61 @@ output$VennDiagram <- renderPlot(  {
   
 # Creating Table that Filters by Family  
    SppTableFilter <- reactive({
-     pruned.data<-MatchDataObj$data[Filters(),]
+     pruned.data<-as.data.table(MatchDataObj$data)[,.(nameOnPhylogeny,CRPR, evolDist,InSeedCollection, InLivingCollection)][Filters()]
      return(pruned.data) 
    })
   
   
 # Plotting Tree
+   
+  # ranges <- reactiveValues(x = NULL, y = NULL)
+   
   output$PlotGGTree <- renderPlot(
     # Expression
     {
       phy2 <- TreeFilter()
       dat <- MatchDataObj$data[MatchDataObj$data$nameOnPhylogeny%in%phy2$tip.label,]
       p <- trait.plot(collapse.singles(phy2), dat, cols = list(InSeedCollection = c("pink", "red"), 
-                                                               InLivingCollection = c("lightblue", "blue")),cex.lab=0.3)
+                                                               InLivingCollection = c("lightblue", "blue")),
+                                                    str = list(c("No","Yes"),c("No","Yes")),
+                                              cex.lab=0.3,cex.legend=2)
+      
+      #  
+      # treeTibble <- as_tibble(phy2)
+      # dataTibble <- as_tibble(dat)
+      # dataTibble$nameOnPhylogeny = as.character(dataTibble$nameOnPhylogeny)
+      # y <- full_join(treeTibble, dataTibble, by  = c("label" = "nameOnPhylogeny"))
+      # treeObj <- as.treedata(y)
+      # 
 ###########
-      #p <- ggtree(phy2,layout='rectangular') + geom_tiplab( size=3, color="black")
-      #p <- p +geom_tippoint(aes(x=x+13), size=inputData$Count^(1/4),na.rm=T,colour="purple")
-      #p <- gheatmapKT(p, CastCountObj_mat, color="black",low=c("yellow"), high = c("purple"),width=1,offset = 2, font.size=3,colnames_position="top") 
+     # p <- ggtree(treeObj,aes(colour=InSeedCollection),layout='circular') + geom_tiplab2(hjust = -.1,align=T)
+      #p <- p +geom_tippoint(aes(x=x+13), size=dim(dat)[1]^(1/4),na.rm=T,colour="purple")
+      #p <- gheatmapKT(p, CastCountObj_mat, color="black",low=c("yellow"), high = c("purple"),width=1,offset = 2, font.size=3,colnames_position="top")
       #p <- p + annotate("text",x=22,size=2.5,y=length(inputData$Count)+1.5,label=input$PollinatorInputPhy2)
       #p <- p + guides(fill=guide_legend(title="Proportion of Pollinator Observations"))
       #p <- p + theme(legend.title.align=0.5)
-      
+
       return(p)
-    },
+    }
+,
     height = 1000,
     width = 800
+
   )    
+  # 
+  # observeEvent(input$plottree_dblclick, {
+  #   brush <- input$plottree_brush
+  #   if (!is.null(brush)) {
+  #     ranges$x <- c(brush$xmin, brush$xmax)
+  #     ranges$y <- c(brush$ymin, brush$ymax)
+  #     
+  #   } else {
+  #     ranges$x <- NULL
+  #     ranges$y <- NULL
+  #   }
+  # })
+  
+  
 
 # Table of Species in Collections Output
   output$FilteredTable <- renderDataTable(
@@ -91,15 +99,68 @@ output$VennDiagram <- renderPlot(  {
     length(Filters())
   )
   
+  
+  observeEvent(input$calculateSignal, {
+    
 # Create reactive model of seed phylogenetic signal
    SeedPhyloModel <- reactive({
       phylo.d(TreeFilter(),SppTableFilter(), names.col=nameOnPhylogeny, binvar=InSeedCollection, permut = 100, rnd.bias=NULL)
    })
-  
 
+# Writing the phylogenetic signal statistic
   output$PhyloDSummarySeed <- renderText(
-    paste("Phylogenetic Signal in Seed Collections:", round(SeedPhyloModel()$DEstimate)))
-      
+    paste("Phylogenetic Signal in Seed Collections:", round(SeedPhyloModel()$DEstimate,digits=2)))
+})
+  
+  observeEvent(input$calculateLivingSignal, {
+    
+    # Create reactive model of seed phylogenetic signal
+   LivingPhyloModel <- reactive({
+      phylo.d(TreeFilter(),SppTableFilter(), names.col=nameOnPhylogeny, binvar=InLivingCollection, permut = 100, rnd.bias=NULL)
+    })
+    
+    # Writing the phylogenetic signal statistic
+    output$PhyloDSummaryLiving <- renderText(
+      paste("Phylogenetic Signal in Living Collections:", round(LivingPhyloModel()$DEstimate,digits=2)))
+  })
+  
+  
+  
+  FiltersVenn <- reactive({
+    if(is.null(input$rareRank)){
+      rareFilter <- seq(1,length(caprSppTable$taxonID))
+    }else{
+      rareFilter <- which(caprSppTable$CRPR_simple%in%input$rareRank)
+    }
+    return(rareFilter)
+  })
+    
+    SppVennFilter <- reactive({
+      data<-as.data.frame(caprSppTable)[FiltersVenn(),]
+      data <- as.data.table(data)
+      return(data) 
+    })  
+    
+ # Table of Species in Venn Diagram
+    output$VennTable <- renderDataTable(
+      SppVennFilter()
+    )
+    
+    
+# Venn diagram of species collection type
+  output$VennDiagram <- renderPlot(  {
+    VenDat <- SppVennFilter()[,.(Count=.N),by="collectionTypes"]
+    VenDat[,collectionTypes:=gsub(", ","&",collectionTypes,fixed=T)] 
+    VenVec <- VenDat$Count
+    names(VenVec) <-VenDat$collectionTypes
+    p <- plot(euler(VenVec),quantities=TRUE)
+    
+    return(p)}
+    ,
+    height=1000,
+    width=800
+  )
+  
 
   
   }
