@@ -1,3 +1,5 @@
+library(BiocManager)
+options(repos = BiocManager::repositories())
 library(shiny)
 library(ggtree)
 library(dqshiny)
@@ -13,6 +15,7 @@ library(phylocanvas)
 library(dplyr)
 library(tidytree)
 library(sensiPhy)
+library(PKI)
 
 
 # Reading in species level data (no jepson ID)
@@ -58,9 +61,11 @@ cnps <- fread("AppData/tblCNPSRanks_2019-Feb-21_2233.csv")
 
 ## Classifying accessions by quality
 # Tier One: Wild provenance, known origin (lat/long or EOindex), maternallines/conservation quality
-capr[biologicalStatus%in%c("wild","cultivated from wild source","presumed wild","presumed cultivated from wild source") & (!is.na(decimalLatitude)|!is.na(cnddbEOIndex)) & preparations%in%c("maternalLines","conservation quality"),conservationClassification:="Conservation Collections: Maternal Lines And Wild"]
+capr[,LocationKnowledge:=ifelse((decimalLatitude>0 | as.numeric(cnddbEOIndex)>0 ),"locationKnown","locationUnknown")]
+capr[is.na(LocationKnowledge),LocationKnowledge:="locationUnknown"]
+capr[biologicalStatus%in%c("wild","cultivated from wild source","presumed wild","presumed cultivated from wild source") & LocationKnowledge=="locationKnown" & preparations%in%c("maternalLines","conservation quality"),conservationClassification:="Conservation Collection (Maternal Lines)"]
 # Tier Two: wild provenance, known origin (lat/long or EOindex), bulked or data deficient
-capr[is.na(conservationClassification)& biologicalStatus%in%c("wild","cultivated from wild source","presumed wild","presumed cultivated from wild source") & basisofRecord=="Seed" & ((!is.na(decimalLatitude)|!is.na(cnddbEOIndex))) & preparations%in%c("bulked","","Data deficient"),conservationClassification:="Seed: Bulked And Wild"]
+capr[is.na(conservationClassification)& grepl("Seed",basisofRecord) & (LocationKnowledge=="locationKnown"| biologicalStatus!="Data deficient") ,conservationClassification:="Seed: Bulked And Wild"]
 # Tier Three: other seed collections
 capr[is.na(conservationClassification)&  grepl("Seed",basisofRecord),conservationClassification:="Seed: Data Deficient"]
 # Tier Four: wild provenanced living collections (not specifically marked as conservation quality)
@@ -72,7 +77,7 @@ capr[is.na(conservationClassification),conservationClassification:="Living: Unkn
 caprSppTable <- capr[,  .(
                         collectionTypes=toString(sort(unique(conservationClassification))),
                         collectionTypesSeed=toString(sort(unique(conservationClassification[grepl("Seed",conservationClassification)|grepl("Maternal",conservationClassification)]))),
-                        countTierOne = uniqueN(cnddbEOIndex[conservationClassification=="MaternalLines And Wild"]),
+                        countTierOne = uniqueN(cnddbEOIndex[conservationClassification=="Conservation Collection (Maternal Lines)"]),
                         countTierFour = uniqueN(eventID[conservationClassification=="Living: Wild Prov"]),
                         seedCollections=sum(1*(grepl("Seed",basisofRecord))),
                         matLinesSeedCollections = sum(1*preparations%in%c("maternalLines","conservation quality")),

@@ -35,6 +35,9 @@ while (dim(tableNew)[1]>0)
 
 SppJep <- TableCombined
 
+write.csv(SppJep,"AppData/JepSpeviesJul2019.csv")
+
+
 # Reading in Regioanl Parks Data
 RPBG <- fread("Data/regionalParksSpeciesListJan2019.csv",quote="",fill=T)
 

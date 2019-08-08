@@ -16,7 +16,7 @@ project to generate a tree with 79,881 plant taxa. Species that were not in this
                h3("Evolutionary Distinctiveness "),
                p("I used the picante package to calculate phylogenetic distinctiveness for each species. The values can be seen in the table tab. These can ultimately be used in our prioritization"),
                h3("What's next?"),
-               p("I am working on how people can view the tree more easily. I want to be able to zoom in, but the ggplot trees that allow you to do that are very slow. For now, I am letting people toggle the label sizes."),
+               p("Filter by vascular plants. Ask phylogenetics team at SBBG if this is a good approach. I am working on how people can view the tree more easily. I want to be able to zoom in, but the ggplot trees that allow you to do that are very slow. For now, I am letting people toggle the label sizes."),
                
                
       # Sidebar layout with input and output definitions ----
@@ -26,7 +26,6 @@ project to generate a tree with 79,881 plant taxa. Species that were not in this
         sidebarPanel(
           sliderInput("sliderTextSize","Select Size of Labels",min=0.1,max=1.5, step=0.1,value=0.3),
           selectInput("famAuto","Family",choices=unique(MatchDataObj$data$family), selected='', multiple=TRUE),
-          #autocomplete_input("famAuto", value='',label = 'Family',options=unique(MatchDataObj$data$family)),
           br(),
           selectInput("countyAuto", 'County (rare plants only):',choices=c("",unique(CountyCodes$CountyCode)),selected='',multiple=TRUE),
           br(),
@@ -67,7 +66,17 @@ project to generate a tree with 79,881 plant taxa. Species that were not in this
 
   tabPanel("Collection Types",
            h2("Collection Categories"),
-           p("I create categories for our seed collections - they are based on the availability of provnance, locality, and seed processing information."),
+           tags$div(
+             HTML("<p>I created the following categories for accessions:&nbsp;</p>
+<ul>
+<li><strong>Conservation Collections: Maternal Lines &amp; Wild</strong>: Seed accessions with available provenance data that have been collected by maternal lines. I added a few living accessions of conservation quality from RSA.</li>
+<li><strong>Seed: Bulked or grown Ex-Situ&nbsp;</strong>Seed accessions with available provenance data that were collected in bulk (or do not specify). This includes seed grown ex-situ from known wild source</li>
+<li><strong>Seed: Data deficient:&nbsp;</strong>Seed accessions without available wild locality information.</li>
+<li><strong>Living: Wild</strong>: Living accessions with known wild provenance</li>
+<li><strong>Living: Unknown</strong>: Living accessions with unknown or garden provenance</li>
+</ul>")
+           ),
+           
            h3("What do I need from RSA?"),
            p("Provance code update: the original template I was using didn't make a ton of sense - I think you probably have this info"),
            h3("What do I need from SBBG?"),
@@ -83,9 +92,11 @@ project to generate a tree with 79,881 plant taxa. Species that were not in this
            
                tabsetPanel(type = "tabs",
                            tabPanel("Progress Graph", 
-                                    plotOutput("ProgressPlot",height=800,width=800)
+                                    plotOutput("ProgressPlot",height=800,width=800),
+                                    dataTableOutput("VennTable")
                                     ),
-                           tabPanel("Venn Diagram",sidebarLayout(
+                           tabPanel("Venn Diagram",
+                                                                        sidebarLayout(
                              
                              # Sidebar panel for inputs ----
                              sidebarPanel(
@@ -94,11 +105,28 @@ project to generate a tree with 79,881 plant taxa. Species that were not in this
                                  "1B" = "1B",
                                  "2B" = "2B",
                                  "3" = "3",
-                                 "4" = "4",
-                                 "1B.1" = "1B.1"),multiple=TRUE)
+                                 "4" = "4"),multiple=TRUE)
                              ),
                              mainPanel(plotOutput("VennDiagram",height=800,width=800)))),
-                           tabPanel("Table", dataTableOutput("VennTable"))
+                           tabPanel("Gold Star Species", 
+                                    h2("Gold Star Species: >= 5 maternal line pops & > 3000 seeds"),
+                                    dataTableOutput("GoldStar"),
+                                    h3("Should we rank within our seed collections on a finer scale?"),
+                                    tags$div(
+                                      HTML(
+                                        "<ul>
+<li><strong>Seed Counts</strong></li>
+<li><strong>Accession Age</strong></li>
+<li><strong>Number of Maternal Lines</strong></li>
+<li><strong>Germination Tests</strong></li>
+<li><strong>Number of populations</strong></li>
+</ul>"
+                                      )
+                                    )
+                                    ),
+                           tabPanel("Data Deficient Accessions",
+                                      h2("Accession missing info needed to categorize"),
+                                      dataTableOutput("dataDeficient"))
              
 )),
 

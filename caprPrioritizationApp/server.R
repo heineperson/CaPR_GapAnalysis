@@ -154,6 +154,9 @@ server <- function(input, output) {
       p <- p + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())
       p <- p +  theme(axis.text.x=element_text(size=14,face="bold",angle=25,hjust=1,colour="black"),axis.text.y=element_text(size=14),
                       axis.title=element_text(size=16,face="bold"),  plot.title = element_text(hjust = 0.5,size=18))
+      p <- p + ylab("# of Species")+ylim(0,1300)
+      p <- p + xlab("CNPS Rank")
+      p <- p + ggtitle("Progress Toward Our Goal")
       return(p) 
     }
      )
@@ -161,9 +164,19 @@ server <- function(input, output) {
   
  # Table of Species in Bar Chart
     output$VennTable <- renderDataTable(
-      collectionTable
+      collectionTable <- caprSppTable[,.(Count=.N),by=c("topCollectionTypes","CRPR_simple")][order(CRPR_simple,topCollectionTypes)]
+      
     )
     
+  # Gold star species that meet the CPC guideliens
+    output$GoldStar <- renderDataTable(
+      caprSppTable[SppRank=="MeetsCPCGoal",.(name_minus_authors,CRPR,matLinesSeedCollections,aggregateSeedCount,aggregateMaternalLineCount)]
+    )    
+
+# Data deficient accessions
+    output$dataDeficient <- renderDataTable(
+     capr[conservationClassification=="Seed: Data Deficient",.(scientificNameOriginal,institutionCode,tgermplasmIdentifier,biologicalStatus,preparations, decimalLatitude,cnddbEOIndex)]
+    )    
     
 # Venn diagram of species collection type
   output$VennDiagram <- renderPlot(  {

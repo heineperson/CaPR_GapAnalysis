@@ -13,6 +13,7 @@ library(data.table)
 library(phytools)
 library(stringr)
 library(caper)
+library(picante)
 
 
 # Species ONLY california phylogeny created in 02 code
@@ -92,8 +93,16 @@ traitDF<- data.frame(traitDT,row.names = traitDT$nameOnPhylogeny)
 # Ensuring trait matrix order matches the phylogenetic tree order 
 traitDF <- traitDF[infraTree$tip.label,]
 
+
+
+
 # Creating a data object that matches the tree and the traits (only including T50 and GP)
 MatchDataObj= match.phylo.data(infraTree, traitDF)
+
+# Calcalculate evoluationary distinctiveness for each species
+EvDist <- evol.distinct(MatchDataObj$phy, type = c("equal.splits", "fair.proportion"),
+              scale = FALSE, use.branch.lengths = TRUE)
+MatchDataObj$data$evolDist <- EvDist$w
 
 # Write to the App Data folder
  saveRDS(MatchDataObj, "caprPrioritizationApp/AppData/MatchDataObj.rds")
