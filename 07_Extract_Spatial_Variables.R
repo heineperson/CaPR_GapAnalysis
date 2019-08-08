@@ -14,6 +14,11 @@ require("ggplot2")
 require("plyr")
 require("viridis")
 
+# Reading in Caspio Token
+source("Tokens/caspioSource.R")
+# Reading in caspio GET command (don't know if this works for things > 1000)
+source("caspioFunctions.R")
+
 # Reading in Jepson File
 jepson <- readOGR(dsn="Data/JepsonLayer",layer="Geographic_Subdivisions_of_California_TJMII_v2_060415")
 
@@ -26,9 +31,10 @@ points_dat <- lapply(1:length(cnddb_shape@polygons),
                      function(x) as.data.table(t(cnddb_shape@polygons[[x]]@labpt)))
 points_dat <- rbindlist(points_dat, fill=TRUE)
 points_dat <- cbind( as.data.table(cnddb_shape@data),points_dat)
+points_dat<- points_dat[TAXONGROUP%in%c("Dicots","Monocots","Ferns","Bryophytes","Gymnosperms","Herbaceous")]
 coordinates(points_dat) <-  ~V1 + V2
 proj4string(points_dat) <- CRS("+proj=aea +lat_1=34 +lat_2=40.5 +lat_0=0 +lon_0=-120 +x_0=0 +y_0=-4000000 +datum=NAD83 +units=m +no_defs +ellps=GRS80 +towgs84=0,0,0")
-spTransform(points_dat,CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"))
+points_dat <- spTransform(points_dat,CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"))
 
 #write.csv(points_dat, "Data/cnddb_PointsfromShape_Aug2019.csv")
 
@@ -50,25 +56,25 @@ CaPRAcc <- TableCombined
 
 #########################
 ## Extracting Jepson for CNDDB File
-cnddb_noNA <- cnddb[!is.na(Longitude)]
-coordinates(cnddb_noNA) <-  ~Longitude + Latitude
-
-# Transforming Coordinate Reference Systems
-proj4string(cnddb_noNA) <- CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0")
-
-spTransform(cnddb_noNA,CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"))
+# cnddb_noNA <- cnddb[!is.na(Longitude)]
+# coordinates(cnddb_noNA) <-  ~Longitude + Latitude
+# 
+# # Transforming Coordinate Reference Systems
+# proj4string(cnddb_noNA) <- CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0")
+# 
+# spTransform(cnddb_noNA,CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"))
 
 #proj4string(jepson) <- CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0")
 jepson <- spTransform(jepson,CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"))
 
-# Extracting ecoregions from jepson layer onto the CNDDB occurrences
-a<-over(cnddb_noNA,jepson)
-jepCnddb <- cbind(as.data.table(cnddb_noNA@data)[,.(EOndx)], as.data.table(a))
+#Extracting ecoregions from jepson layer onto the CNDDB occurrences
+a<-over(points_dat,jepson)
+jepCnddb <- cbind(as.data.table(points_dat@data)[,.(EONDX)], as.data.table(a))
 
 # Merging Jepson onto overal cnddb file
-cnddb <- merge(cnddb, jepCnddb, by.x="EOndx",by.y="EOndx",all.x=T)
+cnddb <- merge(points_dat, jepCnddb, by.x="EONDX",by.y="EONDX",all.x=T)
 
-write.csv(cnddb,"Data/cnddbwithJepson.csv")
+write.csv(cnddb,"caprPrioritizationApp/AppData/cnddbwithJepson.csv")
 
 #########################
 ## Extracting Jepson for Accessions File
@@ -87,7 +93,7 @@ jepCapr <- cbind(as.data.table(capr_noNA@data)[,.(eventID)], as.data.table(a))
 # Merging Jepson onto overal cnddb file
 CaPRAcc <- merge(CaPRAcc, jepCapr, by.x="eventID",by.y="eventID",all.x=T)
 
-write.csv(CaPRAcc,"Data/CaPRwithJepson.csv")
+write.csv(CaPRAcc,"caprPrioritizationApp/AppData/CaPRwithJepson.csv")
 
 # Possible land owners
 BLM
