@@ -94,8 +94,8 @@ caprSppTable[is.na(collectionTypes),collectionTypes:="Uncollected"]
 caprSppTable[is.na(collectionTypesSeed)|collectionTypesSeed=="",collectionTypesSeed:="Uncollected"]
 
 # Summarzing cnddb data at the species level
-cnddb_summ <- cnddb[,.(JepsonRegionsExsiting = toString(unique(JEP_REG))),by="ElmCode"]
-cnddb_summ <- merge(cnddb_summ, cnps[,.(ElementCode, JepID)],by.x="ElmCode",by.y="ElementCode",all.x=T)
+cnddb_summ <- cnddb[,.(JepsonRegionsExsiting = toString(unique(JEP_REG))),by="ELMCODE"]
+cnddb_summ <- merge(cnddb_summ, cnps[,.(ElementCode, JepID)],by.x="ELMCODE",by.y="ElementCode",all.x=T)
 
 # Merging cnddb table and capr Table
 caprSppTable <- merge(caprSppTable,cnddb_summ,by.x="taxonID",by.y="JepID",all.x=T)
@@ -115,12 +115,6 @@ caprSppTable[CRPR%in%c("4","4.1","4.2","4.3"),CRPR_simple:="4"]
  caprSppTable[is.na(topCollectionTypes) & grepl("Living: ",collectionTypes),topCollectionTypes:="05-Living Unknown"]
  caprSppTable[is.na(topCollectionTypes) ,topCollectionTypes:="06-Not Collected"]
  
-
-# What seed collections are data deficient
-capr[conservationClassification=="Seed: Data Deficient" & taxonID%in%caprSppTable$taxonID[which(caprSppTable$CRPR_simple=="1B")],.(scientificNameOriginal,institutionCode,decimalLatitude,cnddbEOIndex,preparations,biologicalStatus)]
-         
-capr[conservationClassification=="Seed: Data Deficient" & taxonID%in%caprSppTable$taxonID[which(caprSppTable$CRPR_simple=="1B")],.(Count=.N),by="institutionCode"]
-
 
 # Finding the "best ever collections"
 caprSppTable[countTierOne>=5 & aggregateSeedCount>3000 & ecoRegionsCollected==JepsonRegionsExsiting, SppRank:="MeetsCPCGoal"]
