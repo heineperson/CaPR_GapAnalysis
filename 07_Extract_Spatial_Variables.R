@@ -72,7 +72,10 @@ fedCnddb <-  cbind(as.data.table(points_dat@data)[,.(EONDX)], as.data.table(b))
 # Merging Federal Lands onto cndbb file
 cnddb <- merge(cnddb, fedCnddb, by.x="EONDX",by.y="EONDX",all.x=T)
 
-write.csv(cnddb,"caprPrioritizationApp/AppData/cnddbwithJepson.csv")
+# Renaming V1 and V2
+
+
+write.csv(cnddb,"caprPrioritizationApp/AppData/cnddbwithJepsonAndFederalLands.csv")
 
 #########################
 ## Extracting Jepson for Accessions File
