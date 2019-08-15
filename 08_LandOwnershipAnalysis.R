@@ -27,7 +27,7 @@ caprRareSummary <- capr[(ElementCode%in%unique(cnddb$ELMCODE)) & !is.na(ElementC
 cnddbCaprSumm <- merge(cnddb,caprRareSummary, by.x="EONDX",by.y="EONDXanalysis",all=T)
 cnddbCaprSumm <- cnddbCaprSumm[PRESENCE=="Presumed Extant"|EONDX>20000000]
 cnddbCaprSumm[is.na(CollectsPerEO),CollectsPerEO:=0]
-cnddbCaprSumm[,CollectedYN:=ifelse(CollectsPerEO> 0,"Yes","No")]
+cnddbCaprSumm[,CollectedYN:=ifelse(CollectsPerEO> 0,1,0)]
 
 # Creating a way to update fields in cnddb from capr
 caprEOPlus <- capr[EONDXplus>200000000]
@@ -39,6 +39,93 @@ cnddbCaprSumm[caprEOPlus,`:=`(SNAME=i.ScientificName,decimalLongPolyCent=i.decim
                               ilmcaPub_6=i.ilmcaPub_6,ilmcaPub_7=i.ilmcaPub_7,ilmcaPub_8=i.ilmcaPub_8,ilmcaPub_9=i.ilmcaPub_9,ilmcaPub10=i.ilmcaPub10,ilmcaPub11=i.ilmcaPub11,
                               ilmcaPub12=i.ilmcaPub12,ilmcaPub13=i.ilmcaPub13,ilmcaPub14=i.ilmcaPub14,ilmcaPub15=i.ilmcaPub15,ilmcaPub16=i.ilmcaPub16,ilmcaPub17=i.ilmcaPub17,
                               ilmcaPub18=i.ilmcaPub18,ilmcaPub19=i.ilmcaPub19,ilmcaPub20=i.ilmcaPub20)]
+
+# Create indicators for different landownerships, combining ownership notes from CNDDB and fedearl land ownership layer
+cnddbCaprSumm[,BLMind:=0]
+cnddbCaprSumm[grepl("BLM",OWNERMGT)| ilmcaPub_1=="BLM",BLMind:=1]
+cnddbCaprSumm[,NPSind:=0]
+cnddbCaprSumm[grepl("NPS",OWNERMGT)| ilmcaPub_1=="NPS",NPSind:=1]
+cnddbCaprSumm[,USFSind:=0]
+cnddbCaprSumm[grepl("USFS",OWNERMGT)| ilmcaPub_1=="USFS",USFSind:=1]
+cnddbCaprSumm[,DODind:=0]
+cnddbCaprSumm[grepl("DOD-",OWNERMGT)| ilmcaPub_1%in%c("DOD","ARMY","NAVY","USAF","USMC","USCG"),DODind:=1]
+cnddbCaprSumm[,FWSind:=0]
+cnddbCaprSumm[grepl("USFWS",OWNERMGT)| ilmcaPub_1%in%c("FWS"),FWSind:=1]
+cnddbCaprSumm[,BIAind:=0]
+cnddbCaprSumm[grepl("BIA",OWNERMGT)| ilmcaPub_1%in%c("BIA"),BIAind:=1]
+cnddbCaprSumm[,LOCALind:=0]
+cnddbCaprSumm[grepl("CITY",OWNERMGT)|grepl("COUNTY",OWNERMGT)|grepl("EBRPD",OWNERMGT)|grepl("LADWP",OWNERMGT)|grepl("MRCA",OWNERMGT)|grepl("MWD",OWNERMGT)|grepl("EBMUD",OWNERMGT)|grepl("WATER DIST",OWNERMGT)| ilmcaPub_1%in%c("LG"),LOCALind:=1]
+cnddbCaprSumm[,STind:=0]
+cnddbCaprSumm[grepl("DFG",OWNERMGT)|grepl("STATE",OWNERMGT)|grepl("UCNR",OWNERMGT)|grepl("DPR",OWNERMGT)|grepl("CALTRANS",OWNERMGT)|grepl("CDF-",OWNERMGT)|grepl("CSU",OWNERMGT)|grepl("DWR",OWNERMGT)|grepl("UC-",OWNERMGT)| ilmcaPub_1%in%c("ST")|grepl("MIDPENINSULA REGIONAL OSD",OWNERMGT),STind:=1]
+cnddbCaprSumm[,PVTind:=0]
+cnddbCaprSumm[grepl("PVT",OWNERMGT)|ilmcaPub_1=="PVT",PVTind:=1]
+cnddbCaprSumm[,NFPind:=0]
+cnddbCaprSumm[grepl("TNC-",OWNERMGT)|OWNERMGT=="SOLANO LAND TRUST"|OWNERMGT=="THE WILDLANDS CONSERVANCY "|grepl("TNC-",OWNERMGT)|grepl("AUDUBON",OWNERMGT)|grepl("FOUNDATION",OWNERMGT)|grepl("LAND TRUST",OWNERMGT),NFPind:=1]
+cnddbCaprSumm[,OTHERInd:=ifelse((BLMind==0 & NPSind==0 & USFSind==0 & DODind==0 & FWSind==0 & BIAind==0 & LOCALind==0 & STind==0 & PVTind==0 & NFPind==0), 1,0)]
+
+# Creating a clean version of a high order lands category from the federal lands layer
+cnddbCaprSumm[,BroadestOwnership:=ilmcaPub_1]
+cnddbCaprSumm[ilmcaPub_1%in%c("ARMY","DOD","NAVY","USACE","USAF","USCG","USMC"),BroadestOwnership:="DOD"]
+cnddbCaprSumm[ilmcaPub20%in%c("National Forest"),BroadestOwnership:="USFS"]
+cnddbCaprSumm[ilmcaPub20%in%c("National Park"),BroadestOwnership:="NPS"]
+cnddbCaprSumm[ilmcaPub20%in%c("American Indian Reservation"),BroadestOwnership:="BIA"]
+cnddbCaprSumm[ilmcaPub20%in%c("Marine Corps Base"),BroadestOwnership:="DOD"]
+cnddbCaprSumm[is.na(BroadestOwnership)|BroadestOwnership%in%c("OTHFE","UND","USBR"),BroadestOwnership:="OTHER"]
+cnddbCaprSumm[USFSind==1 & BroadestOwnership=="OTHER",BroadestOwnership:="USFS"]
+cnddbCaprSumm[NPSind==1 & BroadestOwnership=="OTHER",BroadestOwnership:="NPS"]
+cnddbCaprSumm[BLMind==1 & BroadestOwnership=="OTHER",BroadestOwnership:="BLM"]
+cnddbCaprSumm[DODind==1 & BroadestOwnership=="OTHER",BroadestOwnership:="DOD"]
+cnddbCaprSumm[BIAind==1 & BroadestOwnership=="OTHER",BroadestOwnership:="BIA"]
+cnddbCaprSumm[PVTind==1 & BroadestOwnership=="OTHER",BroadestOwnership:="PVT"]
+cnddbCaprSumm[FWSind==1 & BroadestOwnership=="OTHER",BroadestOwnership:="FWS"]
+cnddbCaprSumm[STind==1 & BroadestOwnership=="OTHER",BroadestOwnership:="ST"]
+cnddbCaprSumm[LOCALind==1 & BroadestOwnership=="OTHER",BroadestOwnership:="LG"]
+cnddbCaprSumm[NFPind==1 & BroadestOwnership=="OTHER",BroadestOwnership:="NFP"]
+cnddbCaprSumm[OWNERMGT=="UNKNOWN" & BroadestOwnership=="OTHER",BroadestOwnership:="UNKNOWN"]
+
+# Calculating the probability that an EO has been collected given land ownership status given latitude and longitude
+modelLandEO <- glm(as.integer(CollectedYN)~decimalLongPolyCent+decimalLatPolyCent+(BLMind)+(NPSind)+USFSind+DODind+FWSind+BIAind+LOCALind+STind+PVTind+OTHERInd,data=cnddbCaprSumm,family="binomial")
+modelLandEOAsOneVariable <- glm(as.integer(CollectedYN)~decimalLongPolyCent+decimalLatPolyCent+BroadestOwnership,data=cnddbCaprSumm,family="binomial")
+summary(modelLandEOAsOneVariable)
+modelLandEOAsOneVariable1B <- glm(as.integer(CollectedYN)~decimalLongPolyCent+decimalLatPolyCent+BroadestOwnership,data=cnddbCaprSumm[grepl("1B",RPLANTRANK)],family="binomial")
+summary(modelLandEOAsOneVariable1B)
+
+# Finding the percent EOs collected on each land type
+landEOSumm <- cnddbCaprSumm[,.(CountEOs = .N, EOsCollected = sum(1*CollectedYN==1)),by="BroadestOwnership"]
+landEOSumm[,PercentCollected:=EOsCollected/CountEOs*100]
+# Finding the percent of 1B EOs collected on each land type
+cnddbCaprSumm[,CollsOfSppAnywhere:=sum(1*CollectedYN==1),by="SNAME"]
+cnddbCaprSumm[,SppCollAnywhereYN:=ifelse(CollsOfSppAnywhere==0,0,1)]
+landEOSumm1B <- cnddbCaprSumm[grepl("1B",RPLANTRANK),.(CountEOs = .N, EOsCollected = sum(1*CollectedYN==1),CountSpecies = uniqueN(SNAME), SppCollectedOnLandType =uniqueN(SNAME[CollectedYN==1]),SppCollectedAnywhere=uniqueN(SNAME[SppCollAnywhereYN==1])),by="BroadestOwnership"]
+landEOSumm1B[,UnCollectedSpeciesOnLand:=CountSpecies-SppCollectedAnywhere]
+landEOSumm1B[,PercentEOsCollected:=EOsCollected/CountEOs*100]
+landEOSumm1B[,PercentSppCollectedOnLand:=SppCollectedOnLandType/CountSpecies*100]
+landEOSumm1B[,PercentSppCollectedAnywhere:=SppCollectedAnywhere/CountSpecies*100]
+landEOSumm1B[,EOsPerSpp:=CountEOs/CountSpecies]
+landEOSumm1B[][order(-UnCollectedSpeciesOnLand)]
+
+cnddbCaprSumm[grepl("1B",RPLANTRANK),.(CountEO=.N),by="SNAME"][order(-CountEO)]
+
+table(cnddbCaprSumm[BroadestOwnership=="USFS"]$SNAME)
+
+unique(cnddbCaprSumm[BroadestOwnership=="USFS"]$SNAME)
+
+# Plotting Percent of 1B EOs collected
+p <- ggplot(data=landEOSumm1B[!(BroadestOwnership%in%c("UNKNOWN","OTHER"))], aes(x=reorder(BroadestOwnership,-PercentEOsCollected), y=PercentEOsCollected))+geom_bar(stat="identity",colour="black")
+p <- p + theme_classic()
+p <- p + xlab("Government Agency") + ylab("Percent of 1B EOs Collected")
+p
+
+# Plotting Number of Uncollected Species
+p <- ggplot(data=landEOSumm1B[BroadestOwnership!="UNKNOWN"], aes(x=reorder(BroadestOwnership,-UnCollectedSpeciesOnLand), y=UnCollectedSpeciesOnLand))+geom_bar(stat="identity",colour="black")
+p <- p + theme_classic()
+p <- p + xlab("Government Agency") + ylab("# Of 1B Species In Need of Collection")
+p
+
+
+
+
+
 
 # Get Shapefilef for california
 
