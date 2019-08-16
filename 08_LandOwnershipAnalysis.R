@@ -77,11 +77,33 @@ cnddbCaprSumm[BLMind==1 & BroadestOwnership=="OTHER",BroadestOwnership:="BLM"]
 cnddbCaprSumm[DODind==1 & BroadestOwnership=="OTHER",BroadestOwnership:="DOD"]
 cnddbCaprSumm[BIAind==1 & BroadestOwnership=="OTHER",BroadestOwnership:="BIA"]
 cnddbCaprSumm[PVTind==1 & BroadestOwnership=="OTHER",BroadestOwnership:="PVT"]
+cnddbCaprSumm[grepl("PVT IN",OWNERMGT),BroadestOwnership:="PVT"]
 cnddbCaprSumm[FWSind==1 & BroadestOwnership=="OTHER",BroadestOwnership:="FWS"]
 cnddbCaprSumm[STind==1 & BroadestOwnership=="OTHER",BroadestOwnership:="ST"]
 cnddbCaprSumm[LOCALind==1 & BroadestOwnership=="OTHER",BroadestOwnership:="LG"]
 cnddbCaprSumm[NFPind==1 & BroadestOwnership=="OTHER",BroadestOwnership:="NFP"]
 cnddbCaprSumm[OWNERMGT=="UNKNOWN" & BroadestOwnership=="OTHER",BroadestOwnership:="UNKNOWN"]
+
+# Fixing the forest columns
+cnddbCaprSumm[BroadestOwnership=="USFS",forest:=ilmcaPub19]
+cnddbCaprSumm[is.na(forest) & BroadestOwnership=="USFS" & grepl("LOS PADRES",OWNERMGT),forest:="Los Padres National Forest"]
+cnddbCaprSumm[is.na(forest) & BroadestOwnership=="USFS" & grepl("SAN BERNARDINO",OWNERMGT),forest:="San Bernardino National Forest"]
+cnddbCaprSumm[is.na(forest) & BroadestOwnership=="USFS" & grepl("LASSEN",OWNERMGT),forest:="Lassen National Forest"]
+cnddbCaprSumm[is.na(forest) & BroadestOwnership=="USFS" & grepl("STANISLAUS",OWNERMGT),forest:="Stanislaus National Forest"]
+cnddbCaprSumm[is.na(forest) & BroadestOwnership=="USFS" & grepl("TAHOE NF",OWNERMGT),forest:="Tahoe National Forest"]
+cnddbCaprSumm[is.na(forest) & BroadestOwnership=="USFS" & grepl("PLUMAS",OWNERMGT),forest:="Plumas National Forest"]
+cnddbCaprSumm[is.na(forest) & BroadestOwnership=="USFS" & grepl("SEQUOIA",OWNERMGT),forest:="Sequoia National Forest"]
+cnddbCaprSumm[is.na(forest) & BroadestOwnership=="USFS" & grepl("LAKE TAHOE BMU",OWNERMGT),forest:="Lake Tahoe Basin Management Unit"]
+cnddbCaprSumm[is.na(forest) & BroadestOwnership=="USFS" & grepl("SHASTA-TRINITY",OWNERMGT),forest:="Shasta-Trinity National Forest"]
+cnddbCaprSumm[is.na(forest) & BroadestOwnership=="USFS" & grepl("KLAMATH",OWNERMGT),forest:="Klamath National Forest"]
+cnddbCaprSumm[is.na(forest) & BroadestOwnership=="USFS" & grepl("ELDORADO",OWNERMGT),forest:="Eldorado National Forest"]
+cnddbCaprSumm[is.na(forest) & BroadestOwnership=="USFS" & grepl("CLEVELAND",OWNERMGT),forest:="Cleveland National Forest"]
+cnddbCaprSumm[is.na(forest) & BroadestOwnership=="USFS" & grepl("ANGELES",OWNERMGT),forest:="Angeles National Forest"]
+cnddbCaprSumm[is.na(forest) & BroadestOwnership=="USFS" & grepl("MENDOCINO",OWNERMGT),forest:="Mendocino National Forest"]
+cnddbCaprSumm[is.na(forest) & BroadestOwnership=="USFS" & grepl("SIERRA",OWNERMGT),forest:="Sierra National Forest"]
+cnddbCaprSumm[is.na(forest) & BroadestOwnership=="USFS" & grepl("SIX RIVERS",OWNERMGT),forest:="Six Rivers National Forest"]
+cnddbCaprSumm[is.na(forest) & BroadestOwnership=="USFS" ,forest:="Notspecified Forest"]
+
 
 # Calculating the probability that an EO has been collected given land ownership status given latitude and longitude
 modelLandEO <- glm(as.integer(CollectedYN)~decimalLongPolyCent+decimalLatPolyCent+(BLMind)+(NPSind)+USFSind+DODind+FWSind+BIAind+LOCALind+STind+PVTind+OTHERInd,data=cnddbCaprSumm,family="binomial")
@@ -96,36 +118,84 @@ landEOSumm[,PercentCollected:=EOsCollected/CountEOs*100]
 # Finding the percent of 1B EOs collected on each land type
 cnddbCaprSumm[,CollsOfSppAnywhere:=sum(1*CollectedYN==1),by="SNAME"]
 cnddbCaprSumm[,SppCollAnywhereYN:=ifelse(CollsOfSppAnywhere==0,0,1)]
-landEOSumm1B <- cnddbCaprSumm[grepl("1B",RPLANTRANK),.(CountEOs = .N, EOsCollected = sum(1*CollectedYN==1),CountSpecies = uniqueN(SNAME), SppCollectedOnLandType =uniqueN(SNAME[CollectedYN==1]),SppCollectedAnywhere=uniqueN(SNAME[SppCollAnywhereYN==1])),by="BroadestOwnership"]
-landEOSumm1B[,UnCollectedSpeciesOnLand:=CountSpecies-SppCollectedAnywhere]
+landEOSumm1B <- cnddbCaprSumm[grepl("1B",RPLANTRANK),.(CountEOs = .N, EOsCollected = sum(1*CollectedYN==1),CountSpecies = uniqueN(SNAME), SppCollectedOnLandOwn =uniqueN(SNAME[CollectedYN==1]),SppCollectedAnywhere=uniqueN(SNAME[SppCollAnywhereYN==1])),by="BroadestOwnership"]
+landEOSumm1B[,UnCollectedSpecies:=CountSpecies-SppCollectedAnywhere]
+landEOSumm1B[,SppCollectedElseWhere:=SppCollectedAnywhere-SppCollectedOnLandOwn]
 landEOSumm1B[,PercentEOsCollected:=EOsCollected/CountEOs*100]
-landEOSumm1B[,PercentSppCollectedOnLand:=SppCollectedOnLandType/CountSpecies*100]
+landEOSumm1B[,PercentSppCollectedOnLand:=SppCollectedOnLandOwn/CountSpecies*100]
 landEOSumm1B[,PercentSppCollectedAnywhere:=SppCollectedAnywhere/CountSpecies*100]
 landEOSumm1B[,EOsPerSpp:=CountEOs/CountSpecies]
-landEOSumm1B[][order(-UnCollectedSpeciesOnLand)]
+landEOSumm1B[,EOsUncollected:=CountEOs-EOsCollected]
+landEOSumm1B[][order(-UnCollectedSpecies)]
+# Melting this dataset down for future plots
+landEOSumm1BMelt <- melt(landEOSumm1B, id.vars="BroadestOwnership",measure.vars = 2:length(names(landEOSumm1B)))
 
-cnddbCaprSumm[grepl("1B",RPLANTRANK),.(CountEO=.N),by="SNAME"][order(-CountEO)]
 
-table(cnddbCaprSumm[BroadestOwnership=="USFS"]$SNAME)
-
-unique(cnddbCaprSumm[BroadestOwnership=="USFS"]$SNAME)
 
 # Plotting Percent of 1B EOs collected
 p <- ggplot(data=landEOSumm1B[!(BroadestOwnership%in%c("UNKNOWN","OTHER"))], aes(x=reorder(BroadestOwnership,-PercentEOsCollected), y=PercentEOsCollected))+geom_bar(stat="identity",colour="black")
-p <- p + theme_classic()
+p <- p + theme_classic(base_size=16)
 p <- p + xlab("Government Agency") + ylab("Percent of 1B EOs Collected")
 p
 
-# Plotting Number of Uncollected Species
-p <- ggplot(data=landEOSumm1B[BroadestOwnership!="UNKNOWN"], aes(x=reorder(BroadestOwnership,-UnCollectedSpeciesOnLand), y=UnCollectedSpeciesOnLand))+geom_bar(stat="identity",colour="black")
-p <- p + theme_classic()
-p <- p + xlab("Government Agency") + ylab("# Of 1B Species In Need of Collection")
+# Make plots that show collections of EOs and species collected as stacked
+p <- ggplot(landEOSumm1BMelt[BroadestOwnership!="UNKNOWN" & variable%in%c("EOsUncollected","EOsCollected")], aes(x=reorder(BroadestOwnership,-value), y=value, fill=variable))+geom_bar(stat="identity",colour="black")
+p <- p + theme_classic(base_size=16)
+p <- p + xlab("Government Agency") + ylab("# Of 1B Element Occurrences")
 p
 
 
+# Plotting Number of Uncollected Species
+p <- ggplot(data=landEOSumm1B[BroadestOwnership!="UNKNOWN"], aes(x=reorder(BroadestOwnership,-UnCollectedSpecies), y=UnCollectedSpecies))+geom_bar(stat="identity",colour="black")
+p <- p + theme_classic(base_size=16)
+p <- p + xlab("Government Agency") + ylab("# Of 1B Species In Need of Collection")
+p
+
+# Showing how species collected on each land type break down
+p <- ggplot(landEOSumm1BMelt[BroadestOwnership!="UNKNOWN" & variable%in%c("UnCollectedSpecies","SppCollectedOnLandOwn","SppCollectedElseWhere")], aes(x=reorder(BroadestOwnership,-value), y=value, fill=reorder(variable,value)))+geom_bar(stat="identity",colour="black")
+p <- p + theme_classic(base_size=16)
+p <- p + xlab("Government Agency") + ylab("# 1B Species Occurring on Land Type")
+p
 
 
+### FOREST SERVICE
+# Create the same species and EO plots for individual forests
+forestEO <- cnddbCaprSumm[grepl("1B",RPLANTRANK) & BroadestOwnership=="USFS",.(CountEOs = .N, EOsCollected = sum(1*CollectedYN==1),CountSpecies = uniqueN(SNAME), SppCollectedOnLandOwn =uniqueN(SNAME[CollectedYN==1]),SppCollectedAnywhere=uniqueN(SNAME[SppCollAnywhereYN==1])),by="forest"]
+forestEO[,UnCollectedSpecies:=CountSpecies-SppCollectedAnywhere]
+forestEO[,SppCollectedElseWhere:=SppCollectedAnywhere-SppCollectedOnLandOwn]
+forestEO[,PercentEOsCollected:=EOsCollected/CountEOs*100]
+forestEO[,PercentSppCollectedOnLand:=SppCollectedOnLandOwn/CountSpecies*100]
+forestEO[,PercentSppCollectedAnywhere:=SppCollectedAnywhere/CountSpecies*100]
+forestEO[,EOsPerSpp:=CountEOs/CountSpecies]
+forestEO[,EOsUncollected:=CountEOs-EOsCollected]
+# Melting
+forestEOMelt <- melt(forestEO, id.vars="forest",measure.vars = 2:length(names(forestEO)))
+forestEOMelt[,forest:=gsub("National Forest","",forest)]
 
+# Plotting Percent of 1B EOs collected
+p <- ggplot(data=forestEO, aes(x=reorder(forest,-PercentEOsCollected), y=PercentEOsCollected))+geom_bar(stat="identity",colour="black")
+p <- p + theme_classic(base_size=16)
+p <- p + xlab("National Forest") + ylab("Percent of 1B EOs Collected")
+p
+
+# Make plots that show collections of EOs and species collected as stacked
+p <- ggplot(forestEOMelt[ variable%in%c("EOsUncollected","EOsCollected")], aes(x=reorder(forest,-value), y=value, fill=variable))+geom_bar(stat="identity",colour="black")
+p <- p + theme_classic(base_size=16)
+p <- p + xlab("National Forest") + ylab("# Of 1B Element Occurrences")
+p
+
+# Plotting Number of Uncollected Species
+p <- ggplot(data=forestEOMelt, aes(x=reorder(forest,-UnCollectedSpecies), y=UnCollectedSpecies))+geom_bar(stat="identity",colour="black")
+p <- p + theme_classic(base_size=16)
+p <- p + xlab("National Forest") + ylab("# Of 1B Species In Need of Collection")
+p
+
+# Showing how species collected on each land type break down
+p <- ggplot(forestEOMelt[variable%in%c("UnCollectedSpecies","SppCollectedOnLandOwn","SppCollectedElseWhere")], aes(x=reorder(forest,-value), y=value, fill=reorder(variable,value)))+geom_bar(stat="identity",colour="black")
+p <- p + theme_classic(base_size=16)
+p <- p +  xlab("National Forest") + ylab("# 1B Species Occurring on NF")
+p <- p + theme(axis.text.x = element_text(angle = 45,hjust=1))
+p
 
 # Get Shapefilef for california
 
@@ -139,6 +209,12 @@ federal_lands <- readOGR(dsn="Data/FederalLands",layer="Federal_Lands_California
 
 federal_lands$area_sqkm <- area(federal_lands) / 1000000
 federal_lands_dat = as.data.table(federal_lands@data)
+federal_lands_dat[,BroadestOwnership:=ilmcaPub_1]
+federal_lands_dat[ilmcaPub_1%in%c("ARMY","DOD","NAVY","USACE","USAF","USCG","USMC"),BroadestOwnership:="DOD"]
+federal_lands_dat[ilmcaPub20%in%c("National Forest"),BroadestOwnership:="USFS"]
+federal_lands_dat[ilmcaPub20%in%c("National Park"),BroadestOwnership:="NPS"]
+federal_lands_dat[ilmcaPub20%in%c("American Indian Reservation"),BroadestOwnership:="BIA"]
+federal_lands_dat[ilmcaPub20%in%c("Marine Corps Base"),BroadestOwnership:="DOD"]
 federal_lands_dat[is.na(ilmcaPub20),ilmcaPub20:=ilmcaPub_1]
 federal_lands_sumPub1 <- federal_lands_dat[,.(aggsumKM = sum(area_sqkm)),by="ilmcaPub_1"]
 federal_lands_sumPub20 <- federal_lands_dat[,.(aggsumKM = sum(area_sqkm)),by="ilmcaPub20"]
