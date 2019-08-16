@@ -2,6 +2,9 @@ library(data.table)
 library(ggplot2)
 library(raster)
 library(rgdal)
+library(geosphere)
+library(ggmap)
+register_google(key = "AIzaSyCBjZpkbYruL3IxwL0nxo4HG0aA5edXu-Q")
 
 
 # Read in Data
@@ -103,6 +106,7 @@ cnddbCaprSumm[is.na(forest) & BroadestOwnership=="USFS" & grepl("MENDOCINO",OWNE
 cnddbCaprSumm[is.na(forest) & BroadestOwnership=="USFS" & grepl("SIERRA",OWNERMGT),forest:="Sierra National Forest"]
 cnddbCaprSumm[is.na(forest) & BroadestOwnership=="USFS" & grepl("SIX RIVERS",OWNERMGT),forest:="Six Rivers National Forest"]
 cnddbCaprSumm[is.na(forest) & BroadestOwnership=="USFS" ,forest:="Notspecified Forest"]
+cnddbCaprSumm[forest=="Rogue River National Forest" ,forest:="Rogue River-Siskiyou National Forests"]
 
 
 # Calculating the probability that an EO has been collected given land ownership status given latitude and longitude
@@ -133,7 +137,7 @@ landEOSumm1BMelt <- melt(landEOSumm1B, id.vars="BroadestOwnership",measure.vars 
 
 
 # Plotting Percent of 1B EOs collected
-p <- ggplot(data=landEOSumm1B[!(BroadestOwnership%in%c("UNKNOWN","OTHER"))], aes(x=reorder(BroadestOwnership,-PercentEOsCollected), y=PercentEOsCollected))+geom_bar(stat="identity",colour="black")
+p <- ggplot(data=landEOSumm1B[!(BroadestOwnership%in%c("UNKNOWN","OTHER"))], aes(x=reorder(BroadestOwnership,-PercentEOsCollected), y=PercentEOsCollected))+geom_bar(stat="identity",colour="black",fill="cyan")
 p <- p + theme_classic(base_size=16)
 p <- p + xlab("Government Agency") + ylab("Percent of 1B EOs Collected")
 p
@@ -141,12 +145,16 @@ p
 # Make plots that show collections of EOs and species collected as stacked
 p <- ggplot(landEOSumm1BMelt[BroadestOwnership!="UNKNOWN" & variable%in%c("EOsUncollected","EOsCollected")], aes(x=reorder(BroadestOwnership,-value), y=value, fill=variable))+geom_bar(stat="identity",colour="black")
 p <- p + theme_classic(base_size=16)
+p <- p + scale_fill_manual(values=c( "purple", "goldenrod2"), 
+                           name="Collection Status",
+                           breaks=c("EOsUncollected", "EOsCollected"),
+                           labels=c("Uncollected","Collected"))
 p <- p + xlab("Government Agency") + ylab("# Of 1B Element Occurrences")
 p
 
 
 # Plotting Number of Uncollected Species
-p <- ggplot(data=landEOSumm1B[BroadestOwnership!="UNKNOWN"], aes(x=reorder(BroadestOwnership,-UnCollectedSpecies), y=UnCollectedSpecies))+geom_bar(stat="identity",colour="black")
+p <- ggplot(data=landEOSumm1B[BroadestOwnership!="UNKNOWN"], aes(x=reorder(BroadestOwnership,-UnCollectedSpecies), y=UnCollectedSpecies))+geom_bar(stat="identity",colour="black",fill="cyan")
 p <- p + theme_classic(base_size=16)
 p <- p + xlab("Government Agency") + ylab("# Of 1B Species In Need of Collection")
 p
@@ -155,6 +163,10 @@ p
 p <- ggplot(landEOSumm1BMelt[BroadestOwnership!="UNKNOWN" & variable%in%c("UnCollectedSpecies","SppCollectedOnLandOwn","SppCollectedElseWhere")], aes(x=reorder(BroadestOwnership,-value), y=value, fill=reorder(variable,value)))+geom_bar(stat="identity",colour="black")
 p <- p + theme_classic(base_size=16)
 p <- p + xlab("Government Agency") + ylab("# 1B Species Occurring on Land Type")
+p <- p + scale_fill_manual(values=c( "darkorchid4", "darkorchid3","goldenrod2"), 
+                           name="Collection Status",
+                           breaks=c("UnCollectedSpecies", "SppCollectedElseWhere","SppCollectedOnLandOwn"),
+                           labels=c("Uncollected", "Collected Somewhere Else","Collected on Type"))
 p
 
 
@@ -171,10 +183,15 @@ forestEO[,EOsUncollected:=CountEOs-EOsCollected]
 # Melting
 forestEOMelt <- melt(forestEO, id.vars="forest",measure.vars = 2:length(names(forestEO)))
 forestEOMelt[,forest:=gsub("National Forest","",forest)]
+forestEOMelt[,forest:=gsub(" s","",forest)]
+forestEO[,forestshort:=gsub("National Forest","",forest)]
+forestEO[,forestshort:=gsub(" s","",forestshort)]
+
 
 # Plotting Percent of 1B EOs collected
-p <- ggplot(data=forestEO, aes(x=reorder(forest,-PercentEOsCollected), y=PercentEOsCollected))+geom_bar(stat="identity",colour="black")
-p <- p + theme_classic(base_size=16)
+p <- ggplot(data=forestEO[forestshort!="Notspecified Forest"], aes(x=reorder(forestshort,-PercentEOsCollected), y=PercentEOsCollected))+geom_bar(stat="identity",colour="black")
+p <- p + theme_classic(base_size=14)
+p <- p + theme(axis.text.x = element_text(angle = 90,hjust=1,size=11))
 p <- p + xlab("National Forest") + ylab("Percent of 1B EOs Collected")
 p
 
@@ -182,20 +199,45 @@ p
 p <- ggplot(forestEOMelt[ variable%in%c("EOsUncollected","EOsCollected")], aes(x=reorder(forest,-value), y=value, fill=variable))+geom_bar(stat="identity",colour="black")
 p <- p + theme_classic(base_size=16)
 p <- p + xlab("National Forest") + ylab("# Of 1B Element Occurrences")
+p <- p + theme(axis.text.x = element_text(angle = 45,hjust=1,size=12))
+p <- p + scale_fill_manual(values=c( "purple", "goldenrod2"), 
+                           name="Collection Status",
+                           breaks=c("EOsUncollected", "EOsCollected"),
+                           labels=c("Uncollected","Collected"))
 p
 
 # Plotting Number of Uncollected Species
-p <- ggplot(data=forestEOMelt, aes(x=reorder(forest,-UnCollectedSpecies), y=UnCollectedSpecies))+geom_bar(stat="identity",colour="black")
-p <- p + theme_classic(base_size=16)
-p <- p + xlab("National Forest") + ylab("# Of 1B Species In Need of Collection")
+p <- ggplot(data=forestEO, aes(x=reorder(forestshort,-UnCollectedSpecies), y=UnCollectedSpecies))+geom_bar(stat="identity",colour="black")
+p <- p + theme_classic(base_size=14)
+p <- p + theme(axis.text.x = element_text(angle = 45,hjust=1,size=12))
+p <-p +  xlab("Forest")
 p
+
 
 # Showing how species collected on each land type break down
 p <- ggplot(forestEOMelt[variable%in%c("UnCollectedSpecies","SppCollectedOnLandOwn","SppCollectedElseWhere")], aes(x=reorder(forest,-value), y=value, fill=reorder(variable,value)))+geom_bar(stat="identity",colour="black")
-p <- p + theme_classic(base_size=16)
+p <- p + theme_classic(base_size=14)
 p <- p +  xlab("National Forest") + ylab("# 1B Species Occurring on NF")
 p <- p + theme(axis.text.x = element_text(angle = 45,hjust=1))
+p <- p + scale_fill_manual(values=c( "darkorchid4", "darkorchid3","goldenrod2"), 
+                           name="Collection Status",
+                           breaks=c("UnCollectedSpecies", "SppCollectedElseWhere","SppCollectedOnLandOwn"),
+                           labels=c("Uncollected", "Collected Somewhere Else","Collected at Forest"))
 p
+
+
+#############
+# Create a function that calculates how far an EO is from a town in kilmoeters
+findDist <- function(nameOfPlace,EOlong,EOlat){
+  placeGeo <- geocode("place")
+  distkm <- distm(c(EOlong,EOlat), c(placeGeo$lon, placeGeo$lat), fun = distHaversine)/1000
+return(distkm)
+}
+
+findDist("Escondido", cnddbCaprSumm$decimalLongPolyCent[1], cnddbCaprSumm$decimalLatPolyCent[1])
+
+
+
 
 # Get Shapefilef for california
 
