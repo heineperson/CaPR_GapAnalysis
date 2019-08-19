@@ -4,7 +4,8 @@ library(raster)
 library(rgdal)
 library(geosphere)
 library(ggmap)
-register_google(key = "AIzaSyCBjZpkbYruL3IxwL0nxo4HG0aA5edXu-Q")
+# Source in Gogole API
+source("Tokens/GoogleAPI.R")
 
 
 # Read in Data
@@ -108,6 +109,48 @@ cnddbCaprSumm[is.na(forest) & BroadestOwnership=="USFS" & grepl("SIX RIVERS",OWN
 cnddbCaprSumm[is.na(forest) & BroadestOwnership=="USFS" ,forest:="Notspecified Forest"]
 cnddbCaprSumm[forest=="Rogue River National Forest" ,forest:="Rogue River-Siskiyou National Forests"]
 
+# Find Distance between seed banks and EOs
+cnddbCaprSumm[, distSDZG := distHaversine(matrix(c(decimalLongPolyCent, decimalLatPolyCent), ncol = 2),
+                                          matrix(c(-117.08, 33.1), ncol = 2))/1000]
+cnddbCaprSumm[, distSBBG := distHaversine(matrix(c(decimalLongPolyCent, decimalLatPolyCent), ncol = 2),
+                                          matrix(c(-119.6, 34.4), ncol = 2))/1000]
+cnddbCaprSumm[, distRSA := distHaversine(matrix(c(decimalLongPolyCent, decimalLatPolyCent), ncol = 2),
+                                         matrix(c(-117.71, 34.1), ncol = 2))/1000]
+cnddbCaprSumm[, distUCB := distHaversine(matrix(c(decimalLongPolyCent, decimalLatPolyCent), ncol = 2),
+                                         matrix(c(-122.273, 37.9), ncol = 2))/1000]
+cnddbCaprSumm[, distUCSC := distHaversine(matrix(c(decimalLongPolyCent, decimalLatPolyCent), ncol = 2),
+                                          matrix(c(-122.0308, 37.0), ncol = 2))/1000]
+
+# Find minimum distance of the five main seed banks
+cnddbCaprSumm[,mindistSB:=min(distSDZG,distSBBG,distRSA,distUCB,distUCSC,na.rm=T),by="EONDX"]
+# Defining nearest seed bank
+cnddbCaprSumm[mindistSB==distSDZG,nearestBank:="SDZG"]
+cnddbCaprSumm[mindistSB==distSBBG,nearestBank:="SBBG"]
+cnddbCaprSumm[mindistSB==distRSA,nearestBank:="RSA"]
+cnddbCaprSumm[mindistSB==distUCB,nearestBank:="UCB"]
+cnddbCaprSumm[mindistSB==distUCSC,nearestBank:="UCSC"]
+
+
+# Fixing errant EO
+cnddbCaprSumm <- cnddbCaprSumm[mindistSB<1000]
+
+# Finding the percent of 1B EOs collected on each land type
+cnddbCaprSumm[,CollsOfSppAnywhere:=sum(1*CollectedYN==1),by="SNAME"]
+cnddbCaprSumm[,SppCollAnywhereYN:=ifelse(CollsOfSppAnywhere==0,0,1)]
+
+# Create a species dataset with mean, min, and max lat long for each species
+cnddbCaprSummSpp <- cnddbCaprSumm[,.(CollsOfSppAnywhere=CollsOfSppAnywhere[1],SppCollAnywhereYN=SppCollAnywhereYN[1],RPLANTRANK=RPLANTRANK[1],
+                 minLat=min(decimalLatPolyCent,na.rm=T),
+                 minLong = min(decimalLongPolyCent,na.rm=T),
+                 maxLat=max(decimalLatPolyCent,na.rm=T),
+                 maxLong = max(decimalLongPolyCent,na.rm=T),
+                 medLat=median(decimalLatPolyCent,na.rm=T),
+                 medLong=median(decimalLongPolyCent,na.rm=T),
+                 minMinDistSB = min(mindistSB,na.rm=T))
+                 ,
+                 #nearestBank = nearestBank[which(mindistSB==min(mindistSB,na.rm=T))]),
+                 by="SNAME"]
+
 
 # Calculating the probability that an EO has been collected given land ownership status given latitude and longitude
 modelLandEO <- glm(as.integer(CollectedYN)~decimalLongPolyCent+decimalLatPolyCent+(BLMind)+(NPSind)+USFSind+DODind+FWSind+BIAind+LOCALind+STind+PVTind+OTHERInd,data=cnddbCaprSumm,family="binomial")
@@ -116,12 +159,7 @@ summary(modelLandEOAsOneVariable)
 modelLandEOAsOneVariable1B <- glm(as.integer(CollectedYN)~decimalLongPolyCent+decimalLatPolyCent+BroadestOwnership,data=cnddbCaprSumm[grepl("1B",RPLANTRANK)],family="binomial")
 summary(modelLandEOAsOneVariable1B)
 
-# Finding the percent EOs collected on each land type
-landEOSumm <- cnddbCaprSumm[,.(CountEOs = .N, EOsCollected = sum(1*CollectedYN==1)),by="BroadestOwnership"]
-landEOSumm[,PercentCollected:=EOsCollected/CountEOs*100]
-# Finding the percent of 1B EOs collected on each land type
-cnddbCaprSumm[,CollsOfSppAnywhere:=sum(1*CollectedYN==1),by="SNAME"]
-cnddbCaprSumm[,SppCollAnywhereYN:=ifelse(CollsOfSppAnywhere==0,0,1)]
+### Finding the percent EOs collected on each land type
 landEOSumm1B <- cnddbCaprSumm[grepl("1B",RPLANTRANK),.(CountEOs = .N, EOsCollected = sum(1*CollectedYN==1),CountSpecies = uniqueN(SNAME), SppCollectedOnLandOwn =uniqueN(SNAME[CollectedYN==1]),SppCollectedAnywhere=uniqueN(SNAME[SppCollAnywhereYN==1])),by="BroadestOwnership"]
 landEOSumm1B[,UnCollectedSpecies:=CountSpecies-SppCollectedAnywhere]
 landEOSumm1B[,SppCollectedElseWhere:=SppCollectedAnywhere-SppCollectedOnLandOwn]
@@ -134,8 +172,26 @@ landEOSumm1B[][order(-UnCollectedSpecies)]
 # Melting this dataset down for future plots
 landEOSumm1BMelt <- melt(landEOSumm1B, id.vars="BroadestOwnership",measure.vars = 2:length(names(landEOSumm1B)))
 
+### FOREST SERVICE
+# Create the same species and EO plots for individual forests
+forestEO <- cnddbCaprSumm[grepl("1B",RPLANTRANK) & BroadestOwnership=="USFS",.(CountEOs = .N, EOsCollected = sum(1*CollectedYN==1),CountSpecies = uniqueN(SNAME), SppCollectedOnLandOwn =uniqueN(SNAME[CollectedYN==1]),SppCollectedAnywhere=uniqueN(SNAME[SppCollAnywhereYN==1])),by="forest"]
+forestEO[,UnCollectedSpecies:=CountSpecies-SppCollectedAnywhere]
+forestEO[,SppCollectedElseWhere:=SppCollectedAnywhere-SppCollectedOnLandOwn]
+forestEO[,PercentEOsCollected:=EOsCollected/CountEOs*100]
+forestEO[,PercentSppCollectedOnLand:=SppCollectedOnLandOwn/CountSpecies*100]
+forestEO[,PercentSppCollectedAnywhere:=SppCollectedAnywhere/CountSpecies*100]
+forestEO[,EOsPerSpp:=CountEOs/CountSpecies]
+forestEO[,EOsUncollected:=CountEOs-EOsCollected]
+# Melting
+forestEOMelt <- melt(forestEO, id.vars="forest",measure.vars = 2:length(names(forestEO)))
+forestEOMelt[,forest:=gsub("National Forest","",forest)]
+forestEOMelt[,forest:=gsub(" s","",forest)]
+forestEO[,forestshort:=gsub("National Forest","",forest)]
+forestEO[,forestshort:=gsub(" s","",forestshort)]
 
-
+######
+## Broad Land Ownership Plots
+######
 # Plotting Percent of 1B EOs collected
 p <- ggplot(data=landEOSumm1B[!(BroadestOwnership%in%c("UNKNOWN","OTHER"))], aes(x=reorder(BroadestOwnership,-PercentEOsCollected), y=PercentEOsCollected))+geom_bar(stat="identity",colour="black",fill="cyan")
 p <- p + theme_classic(base_size=16)
@@ -169,25 +225,9 @@ p <- p + scale_fill_manual(values=c( "darkorchid4", "darkorchid3","goldenrod2"),
                            labels=c("Uncollected", "Collected Somewhere Else","Collected on Type"))
 p
 
-
-### FOREST SERVICE
-# Create the same species and EO plots for individual forests
-forestEO <- cnddbCaprSumm[grepl("1B",RPLANTRANK) & BroadestOwnership=="USFS",.(CountEOs = .N, EOsCollected = sum(1*CollectedYN==1),CountSpecies = uniqueN(SNAME), SppCollectedOnLandOwn =uniqueN(SNAME[CollectedYN==1]),SppCollectedAnywhere=uniqueN(SNAME[SppCollAnywhereYN==1])),by="forest"]
-forestEO[,UnCollectedSpecies:=CountSpecies-SppCollectedAnywhere]
-forestEO[,SppCollectedElseWhere:=SppCollectedAnywhere-SppCollectedOnLandOwn]
-forestEO[,PercentEOsCollected:=EOsCollected/CountEOs*100]
-forestEO[,PercentSppCollectedOnLand:=SppCollectedOnLandOwn/CountSpecies*100]
-forestEO[,PercentSppCollectedAnywhere:=SppCollectedAnywhere/CountSpecies*100]
-forestEO[,EOsPerSpp:=CountEOs/CountSpecies]
-forestEO[,EOsUncollected:=CountEOs-EOsCollected]
-# Melting
-forestEOMelt <- melt(forestEO, id.vars="forest",measure.vars = 2:length(names(forestEO)))
-forestEOMelt[,forest:=gsub("National Forest","",forest)]
-forestEOMelt[,forest:=gsub(" s","",forest)]
-forestEO[,forestshort:=gsub("National Forest","",forest)]
-forestEO[,forestshort:=gsub(" s","",forestshort)]
-
-
+######
+## National Forest Plots
+######
 # Plotting Percent of 1B EOs collected
 p <- ggplot(data=forestEO[forestshort!="Notspecified Forest"], aes(x=reorder(forestshort,-PercentEOsCollected), y=PercentEOsCollected))+geom_bar(stat="identity",colour="black")
 p <- p + theme_classic(base_size=14)
@@ -225,76 +265,91 @@ p <- p + scale_fill_manual(values=c( "darkorchid4", "darkorchid3","goldenrod2"),
                            labels=c("Uncollected", "Collected Somewhere Else","Collected at Forest"))
 p
 
+######
+### Collection Probability vs. minimum distance
+#####
 
-#############
-# Create a function that calculates how far an EO is from a town in kilmoeters
-findDist <- function(nameOfPlace,EOlong,EOlat){
-  placeGeo <- geocode("place")
-  distkm <- distm(c(EOlong,EOlat), c(placeGeo$lon, placeGeo$lat), fun = distHaversine)/1000
-return(distkm)
-}
+# Make histograms of distance to nearest seed bank
 
-findDist("Escondido", cnddbCaprSumm$decimalLongPolyCent[1], cnddbCaprSumm$decimalLatPolyCent[1])
+p <- ggplot(data=cnddbCaprSummSpp[grepl("1B",RPLANTRANK)], aes(x=medLat,fill=as.factor(SppCollAnywhereYN)))+geom_histogram(bins=15,colour="black")
+p <- p + theme_classic()
+p <- p + xlab("Median Latitude of Occurrences in DB")
+p <- p + ylab("Number of 1B Species")
+p <- p + scale_fill_manual(values=c( "goldenrod2","darkorchid4"), 
+                           name="Collection Status",
+                           breaks=c( "1","0"),
+                           labels=c("Collected","Uncollected"))
+p
 
-
-
-
-# Get Shapefilef for california
-
-us<-getData('GADM', country='USA', level=1)
-cali <- subset(us, NAME_1=="California")
-
-# Read in Federal Lands Layer
-federal_lands <- readOGR(dsn="Data/FederalLands",layer="Federal_Lands_California")
-# Clip Federal Lands by California
-#fed_lands_clip <- federal_lands - cali
-
-federal_lands$area_sqkm <- area(federal_lands) / 1000000
-federal_lands_dat = as.data.table(federal_lands@data)
-federal_lands_dat[,BroadestOwnership:=ilmcaPub_1]
-federal_lands_dat[ilmcaPub_1%in%c("ARMY","DOD","NAVY","USACE","USAF","USCG","USMC"),BroadestOwnership:="DOD"]
-federal_lands_dat[ilmcaPub20%in%c("National Forest"),BroadestOwnership:="USFS"]
-federal_lands_dat[ilmcaPub20%in%c("National Park"),BroadestOwnership:="NPS"]
-federal_lands_dat[ilmcaPub20%in%c("American Indian Reservation"),BroadestOwnership:="BIA"]
-federal_lands_dat[ilmcaPub20%in%c("Marine Corps Base"),BroadestOwnership:="DOD"]
-federal_lands_dat[is.na(ilmcaPub20),ilmcaPub20:=ilmcaPub_1]
-federal_lands_sumPub1 <- federal_lands_dat[,.(aggsumKM = sum(area_sqkm)),by="ilmcaPub_1"]
-federal_lands_sumPub20 <- federal_lands_dat[,.(aggsumKM = sum(area_sqkm)),by="ilmcaPub20"]
-federal_lands_sumPub19 <- federal_lands_dat[,.(aggsumKM = sum(area_sqkm)),by="ilmcaPub19"]
-
-# Questions I want to answer
-
-# DO I NEED A STATE PARKS LAYER? YES
-# From the Federal Lands Layer, ilmcaPub_1 = "ST" is for state entities
-# ilmcaPub_6 show these options for state bodies:  
-#"Parks and Recreation" "Lands Commission" "Fish and Wildlife" "Wildlife Conservation Board"  "Other State Department"       "Forestry and Fire Protection"
-cnddb[PRESENCE=="Presumed Extant",.(OWNERMGT,ilmcaPub_1,ilmcaPub_6,ilmcaPub19 ,ilmcaPub20)]
-
-# DO I NEED A UC RESERVE LAYER? Yes
+# Minimum Distance to nearest seed bank
+p <- ggplot(data=cnddbCaprSummSpp[grepl("1B",RPLANTRANK)], aes(x=minMinDistSB,fill=reorder(as.factor(SppCollAnywhereYN),minMinDistSB)))+geom_histogram(binwidth=25,colour="black")
+p <- p + theme_classic(base_size = 14)
+p <- p + xlab("Minimum distance to Permanent Seed Bank (km)")
+p <- p + ylab("Number of 1B Species") + scale_y_continuous(breaks=seq(0,300,by=25))
+p <- p + scale_fill_manual(values=c( "darkorchid4","goldenrod2"), 
+                           name="Collection Status",
+                           breaks=c( "1","0"),
+                           labels=c("Collected","Uncollected"))
+p
 
 
-## What federal lands are best represented in our collection?
-## What federal lands are best represented in our collection per unit land area?
-
-# Fixing ilmcaPub20 so that it is not NA for groups without lower subdivision
-capr[is.na(ilmcaPub20),ilmcaPub20:=ilmcaPub_1]
-caprCountsbyBroadFedGroup <- merge(capr[,.(CollectionsCount=.N),by="ilmcaPub_1"],federal_lands_sumPub1,by="ilmcaPub_1")
-caprCountsbyBroadFedGroup[,CountperKM:=CollectionsCount/aggsumKM]
-caprCountsbyBroadFedGroup[!is.na(ilmcaPub_1 )][order(-CountperKM)]
-
-caprCountsbyMedFedGroup <- merge(capr[,.(CollectionsCount=.N),by="ilmcaPub20"],federal_lands_sumPub20,by="ilmcaPub20")
-caprCountsbyMedFedGroup[,CountperKM:=CollectionsCount/aggsumKM]
-caprCountsbyMedFedGroup[!is.na(ilmcaPub20 ) & aggsumKM>200][order(-CountperKM)]
-
-caprCountsbyForestFedGroup <- merge(capr[grepl("Forest",ilmcaPub19) & grepl("200",eventDate),.(CollectionsCount=.N),by="ilmcaPub19"],federal_lands_sumPub19[grepl("Forest",ilmcaPub19),],by="ilmcaPub19",all=T)
-caprCountsbyForestFedGroup[,CountperKM:=CollectionsCount/aggsumKM]
-caprCountsbyForestFedGroup[][order(-CollectionsCount)]
-
-
-## What proprotion of presumed extant rare plant occurrences have been collected on each federal land type? 
-# Use CNDDB fields for dataset, add in fields for 
-
-
-## What proportion of presumed extant rare plant occurrences have been colelcted on each management unit?
-
-# What specific management units have the most uncollected species (most bang for buck in permissions)?
+# 
+# # Get Shapefilef for california
+# 
+# us<-getData('GADM', country='USA', level=1)
+# cali <- subset(us, NAME_1=="California")
+# 
+# # Read in Federal Lands Layer
+# federal_lands <- readOGR(dsn="Data/FederalLands",layer="Federal_Lands_California")
+# # Clip Federal Lands by California
+# #fed_lands_clip <- federal_lands - cali
+# 
+# federal_lands$area_sqkm <- area(federal_lands) / 1000000
+# federal_lands_dat = as.data.table(federal_lands@data)
+# federal_lands_dat[,BroadestOwnership:=ilmcaPub_1]
+# federal_lands_dat[ilmcaPub_1%in%c("ARMY","DOD","NAVY","USACE","USAF","USCG","USMC"),BroadestOwnership:="DOD"]
+# federal_lands_dat[ilmcaPub20%in%c("National Forest"),BroadestOwnership:="USFS"]
+# federal_lands_dat[ilmcaPub20%in%c("National Park"),BroadestOwnership:="NPS"]
+# federal_lands_dat[ilmcaPub20%in%c("American Indian Reservation"),BroadestOwnership:="BIA"]
+# federal_lands_dat[ilmcaPub20%in%c("Marine Corps Base"),BroadestOwnership:="DOD"]
+# federal_lands_dat[is.na(ilmcaPub20),ilmcaPub20:=ilmcaPub_1]
+# federal_lands_sumPub1 <- federal_lands_dat[,.(aggsumKM = sum(area_sqkm)),by="ilmcaPub_1"]
+# federal_lands_sumPub20 <- federal_lands_dat[,.(aggsumKM = sum(area_sqkm)),by="ilmcaPub20"]
+# federal_lands_sumPub19 <- federal_lands_dat[,.(aggsumKM = sum(area_sqkm)),by="ilmcaPub19"]
+# 
+# # Questions I want to answer
+# 
+# # DO I NEED A STATE PARKS LAYER? YES
+# # From the Federal Lands Layer, ilmcaPub_1 = "ST" is for state entities
+# # ilmcaPub_6 show these options for state bodies:  
+# #"Parks and Recreation" "Lands Commission" "Fish and Wildlife" "Wildlife Conservation Board"  "Other State Department"       "Forestry and Fire Protection"
+# cnddb[PRESENCE=="Presumed Extant",.(OWNERMGT,ilmcaPub_1,ilmcaPub_6,ilmcaPub19 ,ilmcaPub20)]
+# 
+# # DO I NEED A UC RESERVE LAYER? Yes
+# 
+# 
+# ## What federal lands are best represented in our collection?
+# ## What federal lands are best represented in our collection per unit land area?
+# 
+# # Fixing ilmcaPub20 so that it is not NA for groups without lower subdivision
+# capr[is.na(ilmcaPub20),ilmcaPub20:=ilmcaPub_1]
+# caprCountsbyBroadFedGroup <- merge(capr[,.(CollectionsCount=.N),by="ilmcaPub_1"],federal_lands_sumPub1,by="ilmcaPub_1")
+# caprCountsbyBroadFedGroup[,CountperKM:=CollectionsCount/aggsumKM]
+# caprCountsbyBroadFedGroup[!is.na(ilmcaPub_1 )][order(-CountperKM)]
+# 
+# caprCountsbyMedFedGroup <- merge(capr[,.(CollectionsCount=.N),by="ilmcaPub20"],federal_lands_sumPub20,by="ilmcaPub20")
+# caprCountsbyMedFedGroup[,CountperKM:=CollectionsCount/aggsumKM]
+# caprCountsbyMedFedGroup[!is.na(ilmcaPub20 ) & aggsumKM>200][order(-CountperKM)]
+# 
+# caprCountsbyForestFedGroup <- merge(capr[grepl("Forest",ilmcaPub19) & grepl("200",eventDate),.(CollectionsCount=.N),by="ilmcaPub19"],federal_lands_sumPub19[grepl("Forest",ilmcaPub19),],by="ilmcaPub19",all=T)
+# caprCountsbyForestFedGroup[,CountperKM:=CollectionsCount/aggsumKM]
+# caprCountsbyForestFedGroup[][order(-CollectionsCount)]
+# 
+# 
+# ## What proprotion of presumed extant rare plant occurrences have been collected on each federal land type? 
+# # Use CNDDB fields for dataset, add in fields for 
+# 
+# 
+# ## What proportion of presumed extant rare plant occurrences have been colelcted on each management unit?
+# 
+# # What specific management units have the most uncollected species (most bang for buck in permissions)?
