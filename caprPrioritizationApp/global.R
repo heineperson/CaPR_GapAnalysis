@@ -23,6 +23,13 @@ MatchDataObj<- readRDS("AppData/MatchDataObj.rds")
 MatchDataObj$data[is.na(MatchDataObj$data$Counties),]$Counties <- ""
 CountyCodes <- fread("AppData/tblCNPSCountyCodes_2019-Jun-21_1830.csv")
 
+# Reading in EO data created in file 08LandOwnershipSummary
+EOdata <- fread("AppData/eoLandOwnSumm.csv")
+specificLandLongString <- paste( unique(EOdata$OWNERMGT), collapse=",")
+specificLandVec <-     unique(trimws(unlist(strsplit(specificLandLongString, ","))))
+specificLandVec= unique(gsub("\\?.*", "", specificLandVec))
+
+
 # Making phylogoetic tree stuff in the correct format
 MatchDataObj$data$AnyCollection <- as.integer(MatchDataObj$data$AnyCollection)-1
 MatchDataObj$data$InSeedCollection <- as.integer(MatchDataObj$data$InSeedCollection)-1
@@ -94,12 +101,12 @@ caprSppTable[is.na(collectionTypes),collectionTypes:="Uncollected"]
 caprSppTable[is.na(collectionTypesSeed)|collectionTypesSeed=="",collectionTypesSeed:="Uncollected"]
 
 # Summarzing cnddb data at the species level
-cnddb_summ <- cnddb[,.(JepsonRegionsExsiting = toString(unique(JEP_REG))),by="ELMCODE"]
+cnddb_summ <- cnddb[,.(JepsonRegionsExsiting = toString(sort(unique(JEP_REG[!is.na(JEP_REG)])))),by="ELMCODE"]
 cnddb_summ <- merge(cnddb_summ, cnps[,.(ElementCode, JepID)],by.x="ELMCODE",by.y="ElementCode",all.x=T)
 
 # Merging cnddb table and capr Table
 caprSppTable <- merge(caprSppTable,cnddb_summ,by.x="taxonID",by.y="JepID",all.x=T)
-caprSppTable <- merge(caprSppTable,cnps[,.(CRPR, JepID)],by.x="taxonID",by.y="JepID",all.x=T)
+caprSppTable <- merge(caprSppTable,cnps[,.(CRPR, EOExtant,JepID)],by.x="taxonID",by.y="JepID",all.x=T)
 # calculating which ecoregions are not collected 
 caprSppTable[,JepsonRegionsLeft:= toString(trimws(unlist(strsplit(JepsonRegionsExsiting, ",")))[!(trimws(unlist(strsplit(JepsonRegionsExsiting, ",")))%in%trimws(unlist(strsplit(ecoRegionsCollected, ","))))]),by="taxonID"]
 # Simplifying CRPR
@@ -117,7 +124,7 @@ caprSppTable[CRPR%in%c("4","4.1","4.2","4.3"),CRPR_simple:="4"]
  
 
 # Finding the "best ever collections"
-caprSppTable[countTierOne>=5 & aggregateSeedCount>3000 & ecoRegionsCollected==JepsonRegionsExsiting, SppRank:="MeetsCPCGoal"]
+caprSppTable[(countTierOne>=5 | countTierOne >= EOExtant ) & aggregateSeedCount>3000 & JepsonRegionsLeft=="", SppRank:="MeetsCPCGoal"]
 caprSppTable[is.na(SppRank) & countTierOne>1 , SppRank:="PrettyGood"]
 caprSppTable[SppRank=="PrettyGood"]
 

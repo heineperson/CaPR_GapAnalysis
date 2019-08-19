@@ -138,18 +138,20 @@ cnddbCaprSumm <- cnddbCaprSumm[mindistSB<1000]
 cnddbCaprSumm[,CollsOfSppAnywhere:=sum(1*CollectedYN==1),by="SNAME"]
 cnddbCaprSumm[,SppCollAnywhereYN:=ifelse(CollsOfSppAnywhere==0,0,1)]
 
+# Writing data to file
+write.csv(cnddbCaprSumm,"caprPrioritizationApp/AppData/eoLandOwnSumm.csv")
+
 # Create a species dataset with mean, min, and max lat long for each species
-cnddbCaprSummSpp <- cnddbCaprSumm[,.(CollsOfSppAnywhere=CollsOfSppAnywhere[1],SppCollAnywhereYN=SppCollAnywhereYN[1],RPLANTRANK=RPLANTRANK[1],
+cnddbCaprSummSpp <- unique(cnddbCaprSumm[,.(CollsOfSppAnywhere=CollsOfSppAnywhere[1],SppCollAnywhereYN=SppCollAnywhereYN[1],RPLANTRANK=RPLANTRANK[1],
                  minLat=min(decimalLatPolyCent,na.rm=T),
                  minLong = min(decimalLongPolyCent,na.rm=T),
                  maxLat=max(decimalLatPolyCent,na.rm=T),
                  maxLong = max(decimalLongPolyCent,na.rm=T),
                  medLat=median(decimalLatPolyCent,na.rm=T),
                  medLong=median(decimalLongPolyCent,na.rm=T),
-                 minMinDistSB = min(mindistSB,na.rm=T))
-                 ,
-                 #nearestBank = nearestBank[which(mindistSB==min(mindistSB,na.rm=T))]),
-                 by="SNAME"]
+                 minMinDistSB = min(mindistSB,na.rm=T),
+                 nearestBank = nearestBank[which(mindistSB==min(mindistSB,na.rm=T))]),
+                 by="SNAME"])
 
 
 # Calculating the probability that an EO has been collected given land ownership status given latitude and longitude
@@ -292,6 +294,17 @@ p <- p + scale_fill_manual(values=c( "darkorchid4","goldenrod2"),
                            labels=c("Collected","Uncollected"))
 p
 
+# Create a plot where you see the nearest bank for each species
+nearBankDat <- cnddbCaprSummSpp[grepl("1B",RPLANTRANK),.(Count=.N),by=c("SppCollAnywhereYN","nearestBank")]
+p <- ggplot(nearBankDat, aes(x=reorder(as.factor(nearestBank),Count), y=Count,fill=reorder(as.factor(SppCollAnywhereYN),Count)))+geom_bar(stat="identity",color="black")
+p <- p + theme_classic(base_size = 14)
+p <- p + xlab("Primary Seed Bnanks")
+p <- p + ylab("Number of 1B Species Closest to that Bank") + scale_y_continuous(breaks=seq(0,500,by=25))
+p <- p + scale_fill_manual(values=c( "darkorchid4","goldenrod2"), 
+                           name="Collection Status",
+                           breaks=c( "1","0"),
+                           labels=c("Collected","Uncollected"))
+p
 
 # 
 # # Get Shapefilef for california
