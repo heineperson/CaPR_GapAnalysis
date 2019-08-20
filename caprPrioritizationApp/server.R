@@ -189,7 +189,109 @@ server <- function(input, output) {
     return(p)}
   )
   
+#############  
+### Prioritization Tab
+##########
 
+  # Reactive Filters Priotiziation
+
+# Writing a function that gives list for each filter
+filterFunc <- function(InPuT,Data,column){
+  if(is.null(InPuT)){
+    filterOut <- seq(1,dim(Data)[1])
+  }else{
+    filterOut <- which(Data[,get(column)]%in%InPuT)
+  }
+  return(filterOut)
+}
+    
+  # Defining Reactive Filters
+  FiltersOccPrior <- reactive({
+    
+    landOwnBroad <- filterFunc(input$landownBroad,EOdata, "BroadestOwnership")
+    landOwnForest <- filterFunc(input$nationalForest,EOdata, "forest")
+    county <- filterFunc(input$countySample,EOdata, "KEYCOUNTY")
+    ecoRegion <- filterFunc(input$ecoRegion,EOdata, "JEP_REG")
+    specificLands <- filterFunc(input$specificLands,EOdata, "OWNERMGT")
+    collectionSpp <- filterFunc(input$collectionSpp,EOdata, "SppYesNo")
+    crpr <- filterFunc(input$rarityRank,EOdata, "RPLANTRANK")
+    
+    filters <- Reduce(intersect, list(landOwnBroad,landOwnForest,county,ecoRegion,specificLands,collectionSpp,crpr))
+    return(filters)
+  })
+  
+
+  # Occurrence table with reactive filters & location
+  reactiveOccDT <- reactive({
+    if(is.null(input$yourLocation)|input$yourLocation=="" | is.null(input$milesFrom)|input$milesFrom==""){
+      dat <- EOdata[,.(SNAME, CRPR=RPLANTRANK, EO=OCCNUMBER, COUNTY=KEYCOUNTY, LOCATION,LOCDETAILS,`Owner(GIS)`=BroadestOwnership,`Owner(cnddb)`=OWNERMGT,`EO Collected`=CollectedYesNo,`Spp Collected`=SppYesNo)][FiltersOccPrior()][order(SNAME)]
+    }else{
+      loc <- geocode(input$yourLocation)
+      dat <- EOdata[,.(SNAME, CRPR=RPLANTRANK, EO=OCCNUMBER, COUNTY=KEYCOUNTY, LOCATION,LOCDETAILS,`Owner(GIS)`=BroadestOwnership,`Owner(cnddb)`=OWNERMGT,`EO Collected`=CollectedYesNo,`Spp Collected`=SppYesNo,
+                       milesAway=round(distHaversine(matrix(c(decimalLongPolyCent, decimalLatPolyCent), ncol = 2),
+                                               matrix(c(loc[[1]], loc[[2]]), ncol = 2))/6000))][FiltersOccPrior()]
+      dat <- dat[milesAway <= as.numeric(input$milesFrom)][order(milesAway)]
+    }
+    return(dat)
+  })
+  
+  # Species table with reactive filters & location
+  reactiveSppDT <- reactive({
+    if(is.null(input$yourLocation)|input$yourLocation=="" | is.null(input$milesFrom)|input$milesFrom==""){
+      #dat <- EOdata[,.(SNAME, CRPR=RPLANTRANK, EO=OCCNUMBER, COUNTY=KEYCOUNTY, LOCATION,LOCDETAILS,`Owner(GIS)`=BroadestOwnership,`Owner(cnddb)`=OWNERMGT,`EO Collected`=CollectedYesNo,`Spp Collected`=SppYesNo)][FiltersOccPrior()][order(SNAME)]
+      datlim <- EOdata[][FiltersOccPrior()]
+      sppdat <- datlim[,.(CRPR=RPLANTRANK[1],FEDLIST=FEDLIST[1],evolDist=round(evolDist[1]),`Collected Anywhere`=SppYesNo[1],`Collections in Filter`=sum(1*CollectedYN==1)),by=SNAME][order(SNAME)]
+    }else{
+      loc <- geocode(input$yourLocation)
+      datlim <- EOdata[][FiltersOccPrior()]
+      sppdat <- datlim[,.(CRPR=RPLANTRANK[1],FEDLIST=FEDLIST[1],evolDist=round(evolDist[1]),`Collected Anywhere`=SppYesNo[1],`Collections in Filter`=sum(1*CollectedYN==1),
+                       milesAway=min(round(distHaversine(matrix(c(decimalLongPolyCent, decimalLatPolyCent), ncol = 2),
+                                                     matrix(c(loc[[1]], loc[[2]]), ncol = 2))/6000,1),na.rm=T)),by=SNAME]
+      sppdat <- sppdat[milesAway <= as.numeric(input$milesFrom)][order(milesAway)]
+    }
+    return(sppdat)
+  })
+  
+  
+  
+   # output$occurrencesPriority <- renderDataTable(
+   #   reactiveOccDT()
+   # )
+  output$occurrencesPriority <- renderDataTable(
+
+    datatable(
+      cbind(' ' = '&oplus;',     as.data.frame(reactiveOccDT())),
+      escape = -2,
+      options = list(
+        columnDefs = list(
+          list(visible = FALSE, targets = c(5,6,7)),
+          list(orderable = FALSE, className = 'details-control', targets = 1)
+        )
+      ),
+      callback = JS("
+  table.column(1).nodes().to$().css({cursor: 'pointer'});
+  var format = function(d) {
+    return '<div style=\"background-color:#eee; padding: .5em;\"> Location: ' +
+            d[6] + ', More Details: ' + d[7] + ', County: ' + d[5] + '</div>';
+  };
+  table.on('click', 'td.details-control', function() {
+    var td = $(this), row = table.row(td.closest('tr'));
+    if (row.child.isShown()) {
+      row.child.hide();
+      td.html('&oplus;');
+    } else {
+      row.child(format(row.data())).show();
+      td.html('&CircleMinus;');
+    }
+  });"
+      ))
+      )
+  
+  output$sppTablePriority <- renderDataTable(
+    reactiveSppDT()
+  )
+  
+  
   
   }
 

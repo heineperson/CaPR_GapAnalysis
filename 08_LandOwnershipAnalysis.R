@@ -13,7 +13,8 @@ cnddb <- fread('caprPrioritizationApp/AppData/cnddbwithJepson.csv')
 names(cnddb) <- make.unique(names(cnddb))
 setnames(cnddb, c("V1.1","V2"),c("decimalLongPolyCent","decimalLatPolyCent"))
 capr <- fread('caprPrioritizationApp/AppData/CaPRwithJepson.csv',na.strings=c("",NA,"NA"))
-capr <- capr[Deaccession==FALSE  & decimalLatitude>0 & grepl("Seed",basisofRecord)]
+#capr <- capr[Deaccession==FALSE  & decimalLatitude>0 & grepl("Seed",basisofRecord)]
+capr <- capr[Deaccession==FALSE  & grepl("Seed",basisofRecord)]
 cnps <- fread('caprPrioritizationApp/AppData/tblCNPSRanks_2019-Feb-21_2233.csv')
 
 # mergeing on cnps to capr and jepson

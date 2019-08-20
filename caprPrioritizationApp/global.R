@@ -16,6 +16,7 @@ library(dplyr)
 library(tidytree)
 library(sensiPhy)
 library(PKI)
+library(ggmap)
 
 
 # Reading in species level data (no jepson ID)
@@ -25,6 +26,17 @@ CountyCodes <- fread("AppData/tblCNPSCountyCodes_2019-Jun-21_1830.csv")
 
 # Reading in EO data created in file 08LandOwnershipSummary
 EOdata <- fread("AppData/eoLandOwnSumm.csv")
+names(EOdata)[1]="V1.1"
+EOdata <- EOdata[TAXONGROUP!="Bryophytes"]
+EOdata[,CollectedYesNo:=ifelse(CollectedYN==1,"Yes","No")]
+EOdata[,SppYesNo:=ifelse(SppCollAnywhereYN==1,"Yes","No")]
+
+# Merging on evolutionary distinctiveness
+EOdata[,nameOnPhylogeny:=gsub("ssp.","subsp.", SNAME,fixed=T)]
+EOdata[,nameOnPhylogeny:=gsub(" ","_", nameOnPhylogeny,fixed=T)]
+EOdata = merge(EOdata,as.data.table(MatchDataObj$data)[,.(nameOnPhylogeny,evolDist)],by="nameOnPhylogeny",all.x=T)
+
+# Making a string for searching by landowner
 specificLandLongString <- paste( unique(EOdata$OWNERMGT), collapse=",")
 specificLandVec <-     unique(trimws(unlist(strsplit(specificLandLongString, ","))))
 specificLandVec= unique(gsub("\\?.*", "", specificLandVec))
