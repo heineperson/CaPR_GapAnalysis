@@ -17,6 +17,10 @@ library(tidytree)
 library(sensiPhy)
 library(PKI)
 library(ggmap)
+library(geosphere)
+library(DT)
+
+source("Tokens/GoogleAPI.R")
 
 
 # Reading in species level data (no jepson ID)
@@ -27,7 +31,7 @@ CountyCodes <- fread("AppData/tblCNPSCountyCodes_2019-Jun-21_1830.csv")
 # Reading in EO data created in file 08LandOwnershipSummary
 EOdata <- fread("AppData/eoLandOwnSumm.csv")
 names(EOdata)[1]="V1.1"
-EOdata <- EOdata[TAXONGROUP!="Bryophytes"]
+EOdata <- EOdata[TAXONGROUP!="Bryophytes" & TAXONGROUP!="Ferns"]
 EOdata[,CollectedYesNo:=ifelse(CollectedYN==1,"Yes","No")]
 EOdata[,SppYesNo:=ifelse(SppCollAnywhereYN==1,"Yes","No")]
 
@@ -84,7 +88,7 @@ capr[,LocationKnowledge:=ifelse((decimalLatitude>0 | as.numeric(cnddbEOIndex)>0 
 capr[is.na(LocationKnowledge),LocationKnowledge:="locationUnknown"]
 capr[biologicalStatus%in%c("wild","cultivated from wild source","presumed wild","presumed cultivated from wild source") & LocationKnowledge=="locationKnown" & preparations%in%c("maternalLines","conservation quality"),conservationClassification:="Conservation Collection (Maternal Lines)"]
 # Tier Two: wild provenance, known origin (lat/long or EOindex), bulked or data deficient
-capr[is.na(conservationClassification)& grepl("Seed",basisofRecord) & (LocationKnowledge=="locationKnown"| biologicalStatus!="Data deficient") ,conservationClassification:="Seed: Bulked And Wild"]
+capr[is.na(conservationClassification)& grepl("Seed",basisofRecord) & (LocationKnowledge=="locationKnown") ,conservationClassification:="Seed: Bulked And Wild"]
 # Tier Three: other seed collections
 capr[is.na(conservationClassification)&  grepl("Seed",basisofRecord),conservationClassification:="Seed: Data Deficient"]
 # Tier Four: wild provenanced living collections (not specifically marked as conservation quality)
@@ -139,6 +143,9 @@ caprSppTable[CRPR%in%c("4","4.1","4.2","4.3"),CRPR_simple:="4"]
 caprSppTable[(countTierOne>=5 | countTierOne >= EOExtant ) & aggregateSeedCount>3000 & JepsonRegionsLeft=="", SppRank:="MeetsCPCGoal"]
 caprSppTable[is.na(SppRank) & countTierOne>1 , SppRank:="PrettyGood"]
 caprSppTable[SppRank=="PrettyGood"]
+
+# Looking at discrepancies between EO data and CaPR data
+caprSppTable[grepl("1B",CRPR_simple) & topCollectionTypes%in%c("01-Maternal Lines And Wild","02-Seed Bulked","03-Seed Data Deficient") & !(ELMCODE%in%EOdata$ELMCODE[which(EOdata$SppCollAnywhereYN==1)]),.(name_minus_authors,topCollectionTypes)]
 
 # # Making a second table that can be used for venn diagram
 # caprSppTable2 <- capr[,  .(

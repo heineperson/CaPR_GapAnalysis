@@ -14,7 +14,7 @@ names(cnddb) <- make.unique(names(cnddb))
 setnames(cnddb, c("V1.1","V2"),c("decimalLongPolyCent","decimalLatPolyCent"))
 capr <- fread('caprPrioritizationApp/AppData/CaPRwithJepson.csv',na.strings=c("",NA,"NA"))
 #capr <- capr[Deaccession==FALSE  & decimalLatitude>0 & grepl("Seed",basisofRecord)]
-capr <- capr[Deaccession==FALSE  & grepl("Seed",basisofRecord)]
+capr <- capr[Deaccession==FALSE  & (grepl("Seed",basisofRecord)|preparations=="conservation quality")]
 cnps <- fread('caprPrioritizationApp/AppData/tblCNPSRanks_2019-Feb-21_2233.csv')
 
 # mergeing on cnps to capr and jepson
@@ -22,6 +22,8 @@ cnps <- fread('caprPrioritizationApp/AppData/tblCNPSRanks_2019-Feb-21_2233.csv')
 
 # Merging cnddb onto capr
 capr[,cnddbEOIndex:=as.integer(cnddbEOIndex)]
+capr[ScientificName=="Chorizanthe minutiflora",ElementCode:="PDPGN04100"]
+
 # Create a version of the capr dataset that is summarized by EO index
 # Creating a variable that can be used as an EO index if an occurrence hasn't been assigned
 capr[,EONDXplus:=200000000+eventID[1],by=c("taxonID","institutionCode","eventDate","decimalLatitude","decimalLongitude")]
@@ -133,14 +135,14 @@ cnddbCaprSumm[mindistSB==distUCSC,nearestBank:="UCSC"]
 
 
 # Fixing errant EO
-cnddbCaprSumm <- cnddbCaprSumm[mindistSB<1000]
+cnddbCaprSumm <- cnddbCaprSumm[mindistSB>1000, mindistSB:=NA]
 
 # Finding the percent of 1B EOs collected on each land type
 cnddbCaprSumm[,CollsOfSppAnywhere:=sum(1*CollectedYN==1),by="SNAME"]
 cnddbCaprSumm[,SppCollAnywhereYN:=ifelse(CollsOfSppAnywhere==0,0,1)]
 
 # Writing data to file
-write.csv(cnddbCaprSumm,"caprPrioritizationApp/AppData/eoLandOwnSumm.csv")
+#write.csv(cnddbCaprSumm,"caprPrioritizationApp/AppData/eoLandOwnSumm.csv")
 
 # Create a species dataset with mean, min, and max lat long for each species
 cnddbCaprSummSpp <- unique(cnddbCaprSumm[,.(CollsOfSppAnywhere=CollsOfSppAnywhere[1],SppCollAnywhereYN=SppCollAnywhereYN[1],RPLANTRANK=RPLANTRANK[1],
@@ -159,7 +161,7 @@ cnddbCaprSummSpp <- unique(cnddbCaprSumm[,.(CollsOfSppAnywhere=CollsOfSppAnywher
 modelLandEO <- glm(as.integer(CollectedYN)~decimalLongPolyCent+decimalLatPolyCent+(BLMind)+(NPSind)+USFSind+DODind+FWSind+BIAind+LOCALind+STind+PVTind+OTHERInd,data=cnddbCaprSumm,family="binomial")
 modelLandEOAsOneVariable <- glm(as.integer(CollectedYN)~decimalLongPolyCent+decimalLatPolyCent+BroadestOwnership,data=cnddbCaprSumm,family="binomial")
 summary(modelLandEOAsOneVariable)
-modelLandEOAsOneVariable1B <- glm(as.integer(CollectedYN)~decimalLongPolyCent+decimalLatPolyCent+BroadestOwnership,data=cnddbCaprSumm[grepl("1B",RPLANTRANK)],family="binomial")
+modelLandEOAsOneVariable1B <- glm(as.integer(CollectedYN)~decimalLongPolyCent+decimalLatPolyCent+BroadestOwnership,data=cnddbCaprSumm[grepl("1B",RPLANTRANK) & BroadestOwnership!="OTHER"],family="binomial")
 summary(modelLandEOAsOneVariable1B)
 
 ### Finding the percent EOs collected on each land type

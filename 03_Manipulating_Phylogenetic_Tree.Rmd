@@ -118,7 +118,7 @@ viewFamily <- function(family){
 
 
 # Testing for phylogenetic signal in binary trait
-# objPhySeedCOll <- phylo.d(MatchDataObj$data, MatchDataObj$phy, names.col=nameOnPhylogeny, binvar=SeedCollYN, permut = 1000)
+ objPhySeedCOll <- phylo.d(MatchDataObj$data, MatchDataObj$phy, names.col=nameOnPhylogeny, binvar=SeedCollYN, permut = 1000)
 
 
 # Look at Grasses

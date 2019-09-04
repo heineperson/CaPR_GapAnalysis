@@ -3,30 +3,30 @@ ui <- fluidPage(
   theme = shinytheme("sandstone"),
   # App title ----
   titlePanel(""),
-  navbarPage("Explorer Tools",  
+  navbarPage("California Plant Rescue",  
       
 tabPanel("Prioritization Tool",
-         h2("How to prioritize collections"),
+         h2("Use Location, Evolutionary Disctinctiveness, and Landownership to Build Priority Lists"),
          p("The goal was to create something similar to the PIECES tool. Currently, the filters work but the value rankings don't. 
            I wasn't sure if the value rankings for rarity and collection status make sense for us because might be bound by fundign to go for uncollected 1Bs"),
          sidebarLayout(
            
            # Sidebar panel for inputs ----
            sidebarPanel(
-             h2("Collector Specific Inputs"),
+             #h2("Collector Specific Inputs"),
              h3("Collecting Radius"),
              textInput("yourLocation","Enter California City"),
              textInput("milesFrom","Miles you are willing to travel from Above City"),
-             h3("Geographic Filters"),
-             selectInput("countySample", 'Enter Counties You Prefer to Collect: ',choices=c("",sort(unique(EOdata$KEYCOUNTY))),selected='',multiple=TRUE),
-             selectInput("ecoRegion", 'Enter EcoRegions You Prefer to Collect: ',choices=c("",sort(unique(capr$JEP_REG))),selected='',multiple=TRUE),
-             h3("Ownership Filters"),
+             h3("Collection & Rarity Filters"),
+             selectInput("rarityRank","CNPS Ranking ", choices=c("",sort(unique(EOdata$RPLANTRANK))),selected='',multiple=TRUE),
+             selectInput("collectionSpp","Species Already in Seed Collection: ", choices=c("","Yes","No"),selected='',multiple=TRUE),
+            h3("Ownership Filters"),
              selectInput("landownBroad", 'Land Ownership Type (BLM, USFS): ',choices=c("",sort(unique(EOdata$BroadestOwnership))),selected='',multiple=TRUE),
              #selectInput("nationalForest", 'National Forest (from federal lands spatial layer): ',choices=c("",unique(EOdata$forest)),selected='',multiple=TRUE),
              selectInput("specificLands","Specific Landownership (from CNDDB): ", choices=c("",specificLandVec),selected='',multiple=TRUE),
-             h3("Collection & Rarity Filters"),
-             selectInput("rarityRank","CNPS Ranking ", choices=c("",sort(unique(EOdata$RPLANTRANK))),selected='',multiple=TRUE),
-             radioButtons("collectionSpp","Species Already in Seed Collection: ", choices=c("Any"=NULL,"Yes"="Yes","No"="No")),
+             h3("Geographic Filters"),
+             selectInput("countySample", 'Enter Counties You Prefer to Collect: ',choices=c("",sort(unique(EOdata$KEYCOUNTY))),selected='',multiple=TRUE),
+             selectInput("ecoRegion", 'Enter EcoRegions You Prefer to Collect: ',choices=c("",sort(unique(capr$JEP_REG))),selected='',multiple=TRUE),
              
              h2("Value Rankings (NOT WORKING)"),
              textInput("rarityRank","Importance of Rarity"),
@@ -36,17 +36,40 @@ tabPanel("Prioritization Tool",
              
            ),
            mainPanel(
-             h2("Tables Filtered By Inputs"),
+             h2("Species & Occurrences in CNDDB Database Filtered by Inputs"),
              tabsetPanel(type="tabs",
+                         tabPanel("species",
+                                  dataTableOutput("sppTablePriority"),
+                                  downloadButton('downloadSpp',"Download Filtered Species Data")
+                                  
+                         ),                         
                          tabPanel("occurrences",
-               dataTableOutput("occurrencesPriority")),
-               tabPanel("species",
-                        dataTableOutput("sppTablePriority")
-              
-             ))
+               dataTableOutput("occurrencesPriority"),
+               downloadButton('downloadOcc',"Download Filtered Occurrence Data"))
+               )
            )
          )
          ),
+
+tabPanel("Landownership Analysis",
+
+ h1("Analyzing Patterns of Collection by Landownership & Distance from Seed Bank"),
+h2("Takeaway 1: EOs on BLM & FWS land are more likely to be collected than EOs on USFS land"), 
+p("As a first pass, I evaluated if probability that 'presumed extant' element occurrence has been collected differs among broad landownership types (Private (PVT), US Forest Service (USFS), DOD, BLM, Local Government (LG), State Land (ST), National Park Service (NPS), US Fish & Wildlife Service (FWS), etc. 
+   Given the strong geographic collection bias, I included latitude and longitude as covariates in the model. I found that rare EOs on BLM had a highest probability of collection than (6%) where as USFS had the lowest among large agencys (2%). This difference was significant after accounting for lat/long."),
+img(src='Percent1BEOsBroad.png',width=650),
+h2("Takeaway 2: There are way more EOs on Forest Service Land Than Any Other Federal Land Group"), 
+p("I'm not sure it's fair to compare percentages of EOs collected among land groups because Forest Service land has way more EOs per species and per land area than other land owernship types. When you look at the percent of species collected on each land type, the difference is much smaller. 21% of species occurring on USFS land have been collected on USFS land compared to 25% of species for the same metric on BLM land"),
+img(src='EOcounts1BBroad.png',width=650),
+img(src='Species1BBroad.png',width=650),
+h2("Takeaway 3: Large variability in collection progress among National Forests"),
+img(src='NationalForestSpeciesCount.png',width=800),
+h2("Takeaway 4: Frequency of collection declines with distance to seed bank"),
+img(src='MinimumDisttoBank.png',width=650),
+h2("Takeaway 5: We all have plenty to collect near us!"),
+img(src='NumNearestSpeciesbyBank.png',width=650)
+ ),
+
 tabPanel("Phylogeny",
          h2("Phylogenetic Analyses of Seed Collections"),
          h3("How was the tree made?"),
@@ -152,7 +175,7 @@ tabPanel("Collection Types",
                                 ),
                                 mainPanel(plotOutput("VennDiagram",height=800,width=800)))),
                      tabPanel("Gold Star Species", 
-                              h2("Gold Star Species: >= 5 maternal line pops & > 3000 seeds"),
+                              h2("Gold Star Species: >= 5 maternal line pops (or all EOs collected) & > 3000 seeds & All EcoRegions Collected"),
                               dataTableOutput("GoldStar"),
                               h3("Should we rank within our seed collections on a finer scale?"),
                               tags$div(

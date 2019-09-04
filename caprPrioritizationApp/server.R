@@ -197,7 +197,7 @@ server <- function(input, output) {
 
 # Writing a function that gives list for each filter
 filterFunc <- function(InPuT,Data,column){
-  if(is.null(InPuT)){
+  if((is.null(InPuT) )){
     filterOut <- seq(1,dim(Data)[1])
   }else{
     filterOut <- which(Data[,get(column)]%in%InPuT)
@@ -287,8 +287,22 @@ filterFunc <- function(InPuT,Data,column){
       ))
       )
   
-  output$sppTablePriority <- renderDataTable(
-    reactiveSppDT()
+  output$sppTablePriority <- DT::renderDataTable(
+    DT::datatable(reactiveSppDT(),options=list(pageLength = 25))
+  )
+  
+  output$downloadOcc <- downloadHandler(
+    filename = function(){"OccurrencesCnddbCaPRFiltered.csv"}, 
+    content = function(fname){
+      write.csv(reactiveOccDT(), fname)
+    }
+  )
+  
+  output$downloadSpp <- downloadHandler(
+    filename = function(){"SppCnddbCaPRFiltered.csv"}, 
+    content = function(fname){
+      write.csv(    reactiveSppDT(), fname)
+    }
   )
   
   
