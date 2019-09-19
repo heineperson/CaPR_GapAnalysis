@@ -52,3 +52,41 @@ caspio_get_view = function(TableName,login1,pagenumber=1){
   print(dim(table_DT))
   
 }
+
+# Caspio Getting multiple pages for tables
+caspio_get_table_all = function(TableName){
+  
+  tableNew <- caspio_get_table(TableName,login1,1)
+  TableCombined = NULL
+  pagenumber=1
+  
+  while (dim(tableNew)[1]>0)
+  {
+    pagenumber = pagenumber + 1
+    TableCombined <- rbind(TableCombined,tableNew)
+    tableNew <- caspio_get_table(TableName,login1,pagenumber)
+  }
+  
+  DatReturn <- TableCombined
+  return(DatReturn)
+}
+
+# Caspio getting view pages
+caspio_get_view_all = function(ViewName){
+  
+  tableNew <- caspio_get_view(ViewName,login1,1)
+  TableCombined = NULL
+  pagenumber=1
+  
+  while (dim(tableNew)[1]>0)
+  {
+    pagenumber = pagenumber + 1
+    TableCombined <- rbind(TableCombined,tableNew)
+    tableNew <- caspio_get_view(ViewName,login1,pagenumber)
+  }
+  
+  DatReturn <- TableCombined
+  return(DatReturn)
+  
+}
+
