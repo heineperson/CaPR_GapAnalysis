@@ -42,33 +42,11 @@ firstup <- function(x) {
 data <- fread("Data/CAPR_Collections_Search_Results2019-06-26 (1).csv")
 data[,genus:=word(`Taxon Name (Jepson)`,1,1)]
 
-# Reading in CaPR species list
-caprSpp <- caspio_get_table("tblSpeciesJepCAPR",login1,1)
-TableCombinedSeedProSDZG = NULL
-pagenumber=1
-
-while (dim(caprSpp)[1]>0)
-{
-  pagenumber = pagenumber + 1
-  TableCombinedSeedProSDZG <- rbind(TableCombinedSeedProSDZG,caprSpp)
-  caprSpp <- caspio_get_table("tblSpeciesJepCAPR",login1,pagenumber)
-}
-
-caprSpp <- TableCombinedSeedProSDZG
+# Reading in CaPR species list from caspio
+caprSpp <- caspio_get_table_all("tblSpeciesJepCAPR")
 
 # Reading in CNPS
-cnps <- caspio_get_table("tblCNPSRanks",login1,1)
-cnpsTEMP = NULL
-pagenumber=1
-
-while (dim(cnps)[1]>0)
-{
-  pagenumber = pagenumber + 1
-  cnpsTEMP <- rbind(cnpsTEMP,cnps)
-  cnps <- caspio_get_table("tblCNPSRanks",login1,pagenumber)
-}
-
-cnps <- cnpsTEMP
+cnps <- caspio_get_table_all("tblCNPSRanks")
 
 ```
 
@@ -87,35 +65,34 @@ To have as much phylogenetic resolution as possible, we want to the genera from 
 
 # Merging capr with cnps so that we can include species with the following criteria:
 Spp1 <-  merge(caprSpp,cnps, by="JepID",all.x=T)
-Spp1 <- Spp1[ grepl("1B",CRPR) | TJM1TJM2%in%c("TJM1","TJM2")]
+Spp1 <- Spp1[ grepl("1B",CRPR) |  grepl("2B",CRPR)| TJM1TJM2%in%c("TJM1","TJM2")]
 Spp1 <- Spp1[,.(species=name_minus_authors,familyJep=firstup(tolower(family)), genus, TJM1TJM2,CRPR,major_clade,endemicity)]
 Spp1[,genus:=word(`species`,1,1),by="species"]
-
 
 ## Finding Family's from genera from phylomaker Nodes file
 genusTable1 = as.data.table(nodes.info.1)[,.(familyTree=family[1]),by="genus"]
 
 ## Merge megatree families onto genera
 Spp1 <- merge(Spp1,genusTable1,by="genus",all.x=T)
-Spp1 <- Spp1[,.(species,genus,family=familyTree,major_clade)]
+Spp1 <- Spp1[,.(species,genus,family=familyTree,familyJep,major_clade)]
 
 
 # Which genera weren't matched in the mega tree
-GenNa1 <- Spp1[is.na(family),.(Count=.N),by="genus"]
-JepFam1 <- data[,.(Count=.N),by=c("Family","genus")]
+GenNa1 <- Spp1[is.na(family),.(Count=.N),by=c("genus","familyJep")]
+#JepFam1 <- data[,.(Count=.N),by=c("Family","genus")]
 # Adding families to genera that weren't matched in the super tree
-GenNa1 <- merge(GenNa1,JepFam1, by="genus",all.x=T)
-GenNa1[,Count.x:=NULL]
-GenNa1[,Count.y:=NULL]
-GenNa1[,Family:=firstup(tolower(Family))]
+#GenNa1 <- merge(GenNa1,JepFam1, by="genus",all.x=T)
+#GenNa1[,Count.x:=NULL]
+#GenNa1[,Count.y:=NULL]
+#GenNa1[,Family:=firstup(tolower(Family))]
 # Checking which families in the CaPR list are not in the super tree
-GenNa1[!(Family%in%genusTable1$family)][order(Family)]
+GenNa1[!(familyJep%in%genusTable1$family)][order(familyJep)]
 
 # Making a few fixes to these famileis
-GenNa1[Family=="Agavaceae", Family:="Asparagacaeae"]
-GenNa1[Family=="Chenopodiaceae", Family:="Amaranthaceae"]
-GenNa1[genus=="Aphyllon", Family:="Orobanchaceae"]
-GenNa1[genus=="Mimetanthe", Family:="Phyrmaceae"]
+GenNa1[familyJep=="Agavaceae", familyJep:="Asparagaceae"]
+GenNa1[familyJep=="Chenopodiaceae", familyJep:="Amaranthaceae"]
+#GenNa1[genus=="Aphyllon", familyJep:="Orobanchaceae"]
+#GenNa1[genus=="Mimetanthe", familyJep:="Phyrmaceae"]
 
 #GenNa1[!(Family%in%genusTable1$family),Family:="FernOrNonVascular"]
 
@@ -235,13 +212,12 @@ GenNa1[genus%in%c("Hesperoyucca"), `:=` (genus.relative="Yucca",citation="XXX")]
 # Update familes in the mega tree list
 setkey(Spp1, genus)
 setkey(GenNa1, genus)
-Spp1[GenNa1,`:=` (genus = i.genus,family=i.Family, genus.relative=i.genus.relative)]
+Spp1[GenNa1,`:=` (genus = i.genus,family=i.familyJep, genus.relative=i.genus.relative)]
 
 # Adding species relatives to varieties and subspecies
 Spp1[grepl("var.",species, fixed=T) | grepl("subsp.",species, fixed=T),species.relative:=word(species,1,2)]
 
-# Limit to Vascular Plants
-SppVas1 <- Spp1[major_clade%in%c("GYMNOSPERMS","EUDICOTS","MONOCOTS","MAGNOLIDS","")]
+
 
 ```
 
@@ -348,7 +324,7 @@ I plan to build a phylogeny for all species level taxa using phylomaker and then
 # sapply( list.files("VPhylomakerCodes/", full.names=TRUE), source )
 
 # Filtering for only species
-SppCopy <- SppVas1
+SppCopy <- Spp1
 SppCopy[,binomial:=word(species,1,2)]
 SppCopy[grepl(" x ", species)|grepl(" X ", species),binomial:=ifelse(str_count(species," ")==3,binomial,word(species,1,3,sep=" "))]
 SppCopy[,SppCount:=.N,by="binomial"]
@@ -364,8 +340,8 @@ SpeicesOnlyBind <- bind.relative(SppOnly)
 result_california_speciesOnly <-  phylo.maker(sp.list=SpeicesOnlyBind$species.list, tree=SpeicesOnlyBind$phylo, nodes=SpeicesOnlyBind$nodes.info) 
 
 # Writing data to the disc
-  write.tree(result_california_speciesOnly$scenario.3,"Data/result_california_speciesOnly_20190829.tre")
-  write.csv(result_california_speciesOnly$species.list,"Data/result_california_speciesOnly_20190829.csv")
+  write.tree(result_california_speciesOnly$scenario.3,"Data/result_california_speciesOnly_20190919.tre")
+  write.csv(result_california_speciesOnly$species.list,"Data/result_california_speciesOnly_20190919.csv")
 
 ```
 
@@ -439,7 +415,7 @@ newTree <- addSubSpecies(infraListtmp,newTree)
 
 }
 
-write.tree(newTree, "Data/californiaTreewithInfraSpecies_20190829.tre")
+write.tree(newTree, "Data/californiaTreewithInfraSpecies_20190919.tre")
 
 # Evaluating species genera
 
