@@ -11,6 +11,8 @@ source("Tokens/caspioSource.R")
 # Reading in caspio GET command (don't know if this works for things > 1000)
 source("caspioFunctions.R")
 
+cnps <- caspio_get_table_all("tblCNPSRanks")
+
 tableNew <- caspio_get_view("caprViewNoLists",login1,1)
 TableCombined = NULL
 pagenumber=1
@@ -24,9 +26,15 @@ while (dim(tableNew)[1]>0)
 
 CaPRAcc <- TableCombined
 
+CaPRAcc <- merge(CaPRAcc,cnps,by.x="taxonID",by.y="JepID",all.x=T)
+
 CaPRAcc[,Date:=gsub("T00:00:00","",eventDate)]
 CaPRAcc[,Date:=as.Date(Date,"%Y-%m-%d")]
 CaPRAcc[,Year:=year(Date)]
+CaPRAcc[,inst:=collectingInstituteCode]
+CaPRAcc[inst=="",inst:=institutionCode]
 
-CaPRAcc[,Year:=]
-CaPRAcc[grepl("Seed",basisofRecord) & Year>2015,.(Count=.N,SppCount=uniqueN(taxonID)),by=c("collectingInstituteCode","Year")]
+
+CaPRAcc[grepl("Seed",basisofRecord) & Year>2015,.(Count=.N,SppCount=uniqueN(taxonID), EOCount=uniqueN(cnddbEOIndex)),by=c("inst","Year")]
+
+CaPRAcc[grepl("Seed",basisofRecord) & Year>2015,.(Count=.N,SppCount=uniqueN(taxonID), RareSppCount= uniqueN(taxonID[!is.na(CRPR)]), EOCount=uniqueN(cnddbEOIndex)),by=c("inst","Year")][order(inst,Year)]

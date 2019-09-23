@@ -17,9 +17,9 @@ library(picante)
 
 
 # Species ONLY california phylogeny created in 02 code
-sppOnlyTree <- read.tree("Data/result_california_speciesOnly_20190627.tre")
+sppOnlyTree <- read.tree("Data/result_california_speciesOnly_20190923.tre")
 # California phylogeny with infraspecies created in 02 code
-infraTree <- read.tree("Data/californiaTreewithInfraSpecies_20190626.tre")
+infraTree <- read.tree("Data/californiaTreewithInfraSpecies_20190923.tre")
 # Accessions Data
 accDat <- fread("Data/tblAccessionsCAPR_2019-Jun-21_1829.csv",na.strings=c("",NA,"NA"))
 accDat[,organismQuantity:=as.numeric(organismQuantity)]

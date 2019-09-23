@@ -38,9 +38,6 @@ firstup <- function(x) {
   x
 }
 
-# Loading CaPR Accessions Data
-data <- fread("Data/CAPR_Collections_Search_Results2019-06-26 (1).csv")
-data[,genus:=word(`Taxon Name (Jepson)`,1,1)]
 
 # Reading in CaPR species list from caspio
 caprSpp <- caspio_get_table_all("tblSpeciesJepCAPR")
@@ -59,13 +56,9 @@ To have as much phylogenetic resolution as possible, we want to the genera from 
 ```{r v phylo maker data clean up}
 ###################### V Phylomaker  ########################
 
-
-## Making species list for CaPR species
-# Spp1 <- data[,.(Count=.N),by="Taxon Name (Jepson)"]
-
 # Merging capr with cnps so that we can include species with the following criteria:
 Spp1 <-  merge(caprSpp,cnps, by="JepID",all.x=T)
-Spp1 <- Spp1[ grepl("1B",CRPR) |  grepl("2B",CRPR)| TJM1TJM2%in%c("TJM1","TJM2")]
+Spp1 <- Spp1[ grepl("1B",CRPR) |  grepl("2B",CRPR)|  grepl("3",CRPR)|  grepl("4",CRPR)| TJM1TJM2%in%c("TJM1","TJM2")]
 Spp1 <- Spp1[,.(species=name_minus_authors,familyJep=firstup(tolower(family)), genus, TJM1TJM2,CRPR,major_clade,endemicity)]
 Spp1[,genus:=word(`species`,1,1),by="species"]
 
@@ -76,15 +69,8 @@ genusTable1 = as.data.table(nodes.info.1)[,.(familyTree=family[1]),by="genus"]
 Spp1 <- merge(Spp1,genusTable1,by="genus",all.x=T)
 Spp1 <- Spp1[,.(species,genus,family=familyTree,familyJep,major_clade)]
 
-
 # Which genera weren't matched in the mega tree
 GenNa1 <- Spp1[is.na(family),.(Count=.N),by=c("genus","familyJep")]
-#JepFam1 <- data[,.(Count=.N),by=c("Family","genus")]
-# Adding families to genera that weren't matched in the super tree
-#GenNa1 <- merge(GenNa1,JepFam1, by="genus",all.x=T)
-#GenNa1[,Count.x:=NULL]
-#GenNa1[,Count.y:=NULL]
-#GenNa1[,Family:=firstup(tolower(Family))]
 # Checking which families in the CaPR list are not in the super tree
 GenNa1[!(familyJep%in%genusTable1$family)][order(familyJep)]
 
@@ -340,8 +326,8 @@ SpeicesOnlyBind <- bind.relative(SppOnly)
 result_california_speciesOnly <-  phylo.maker(sp.list=SpeicesOnlyBind$species.list, tree=SpeicesOnlyBind$phylo, nodes=SpeicesOnlyBind$nodes.info) 
 
 # Writing data to the disc
-  write.tree(result_california_speciesOnly$scenario.3,"Data/result_california_speciesOnly_20190919.tre")
-  write.csv(result_california_speciesOnly$species.list,"Data/result_california_speciesOnly_20190919.csv")
+  write.tree(result_california_speciesOnly$scenario.3,"Data/result_california_speciesOnly_20190923.tre")
+  write.csv(result_california_speciesOnly$species.list,"Data/result_california_speciesOnly_201909123.csv")
 
 ```
 
@@ -350,34 +336,6 @@ result_california_speciesOnly <-  phylo.maker(sp.list=SpeicesOnlyBind$species.li
 Looping through all the species with infra species and replace the species level taxa with multiple infraspecies in the same clade.
 
 ```{r looping through infraspecies code}
-# Reorganizing the pipeline
-# spp <- fread("Data/tblSpeciesJepCAPR_2019-Jun-21_1946.csv")
-# 
-# spp[,name_minus_authors:=gsub(" ","_",name_minus_authors)]
-# 
-# # Sorting out which species have infra species
-# spp[,binomial:=word(name_minus_authors,1,2,sep="_")]
-# # Fixing situation with " x " (for crosses)
-# 
-# spp[,SppCount:=.N,by="binomial"]
-# spp[,SppID:=1:.N,by="binomial"]
-# spp[,infraSpp := toString(name_minus_authors[(grepl("var.",name_minus_authors,fixed=T)|grepl("subsp.",name_minus_authors,fixed=T))]),by="binomial"]
-# 
-# # Asking which collected species have infra species but also binomial level names
-# spp[, Reassign:=ifelse((binomial==name_minus_authors & SppCount>1 ), "Yes","No")]
-# spp[Reassign=="Yes",.(binomial,infraSpp)]
-# spp[grepl("var.",infraSpp,fixed=T),InfraType:="var."]
-# spp[grepl("subsp.",infraSpp,fixed=T),InfraType:="subsp."]
-# spp[grepl("subsp.",infraSpp,fixed=T) & grepl("var.",infraSpp,fixed=T),InfraType:="both"]
-# 
-# # Fixing the one bad example
-# spp[Reassign=="Yes"  & InfraType=="both", InfraType:="subsp."]
-# 
-# # Specifying the name on the phylogeny for each species (different than the Jep ID)
-# spp[,nameOnPhylogeny:=ifelse(Reassign=="Yes",paste(name_minus_authors,InfraType,species,sep="_"),name_minus_authors)]
-# 
-# # Write out dataset for use with tree
-# write.csv(spp,"Data/spp_withNameOnPhylogeny.csv")
 
 #########
 # Trying out new method without reinventing wheel
@@ -400,7 +358,7 @@ SppCopy[,nameOnPhylogeny:=ifelse(Reassign=="Yes",paste(species,InfraType,word(sp
 # Replace spaces with "_"
 SppCopy[,nameOnPhylogeny:=gsub(" ","_",nameOnPhylogeny)]
 
-write.csv(SppCopy,"Data/spp_withNameOnPhylogeny_20190626.csv")
+write.csv(SppCopy,"Data/spp_withNameOnPhylogeny_20190923.csv")
 
 # Create object that can be looped through to add species
 InfraSummary <- SppCopy[(infraSpp)!="",.(InfraString=toString(unique(nameOnPhylogeny))),by=c("binomial")]
@@ -415,7 +373,7 @@ newTree <- addSubSpecies(infraListtmp,newTree)
 
 }
 
-write.tree(newTree, "Data/californiaTreewithInfraSpecies_20190919.tre")
+write.tree(newTree, "Data/californiaTreewithInfraSpecies_20190923.tre")
 
 # Evaluating species genera
 

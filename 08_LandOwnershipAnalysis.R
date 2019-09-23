@@ -301,7 +301,7 @@ p
 nearBankDat <- cnddbCaprSummSpp[grepl("1B",RPLANTRANK),.(Count=.N),by=c("SppCollAnywhereYN","nearestBank")]
 p <- ggplot(nearBankDat, aes(x=reorder(as.factor(nearestBank),Count), y=Count,fill=reorder(as.factor(SppCollAnywhereYN),Count)))+geom_bar(stat="identity",color="black")
 p <- p + theme_classic(base_size = 14)
-p <- p + xlab("Primary Seed Bnanks")
+p <- p + xlab("Primary Seed Bank")
 p <- p + ylab("Number of 1B Species Closest to that Bank") + scale_y_continuous(breaks=seq(0,500,by=25))
 p <- p + scale_fill_manual(values=c( "darkorchid4","goldenrod2"), 
                            name="Collection Status",
