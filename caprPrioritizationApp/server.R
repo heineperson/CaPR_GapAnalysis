@@ -267,7 +267,7 @@ filterFunc <- function(InPuT,Data,column){
     sppdat[,RareScore:=RareScore/100]
 
     # Collection Status
-    sppdat[,CollectScore:=ifelse(`Collected Anywhere`=="Yes",0,0.5)]
+    sppdat[,CollectScore:=ifelse(`Collected Anywhere`=="Yes",0,1)]
 
     # Nearness
     sppdat[,DistScore:=ifelse(is.na(milesAway),0,1-milesAway/max(milesAway,na.rm=T))]
@@ -276,13 +276,13 @@ filterFunc <- function(InPuT,Data,column){
     sppdat[is.na(evolDist)|evolDist=="",evolDist:=1]
     sppdat[,EvolScore:=evolDist/max(evolDist,na.rm=T)]
 
-    # TotalScoe
+    # TotalScore
+    print(input$rarityRank1)
     sppdat[,RawScore:=RareScore+DistScore+EvolScore+CollectScore]
-    sppdat[,AdjScore:=RareScore*(5-input$rarityRank)+EvolScore*(5-input$evoRank)+CollectScore*(5-input$collectionRank)+DistScore*(5-input$locationRank)]
-    #a = input$rarityRank
-    sppdat=sppdat[,.(SNAME,CRPR,evolDist,`Collected Anywhere`,milesAway,RawScore,AdjScore)][order(-RawScore,milesAway,SNAME)]
+    sppdat[,AdjScore:=RareScore*(5-(input$rarityRank1))+EvolScore*(5-input$evoRank)+CollectScore*(5-input$collectionRank)+DistScore*(5-input$locationRank)]
+    sppdat1=sppdat[,.(SNAME,CRPR,evolDist,`Collected Anywhere`,milesAway,RareScore,CollectScore,DistScore,EvolScore,AdjScore)][order(-AdjScore,milesAway,SNAME)]
 
-    return(sppdat)
+    return(sppdat1)
   })
   
   
