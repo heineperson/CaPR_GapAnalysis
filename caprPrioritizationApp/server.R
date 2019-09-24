@@ -240,7 +240,7 @@ filterFunc <- function(InPuT,Data,column){
     if(is.null(input$yourLocation)|input$yourLocation=="" | is.null(input$milesFrom)|input$milesFrom==""){
       #dat <- EOdata[,.(SNAME, CRPR=RPLANTRANK, EO=OCCNUMBER, COUNTY=KEYCOUNTY, LOCATION,LOCDETAILS,`Owner(GIS)`=BroadestOwnership,`Owner(cnddb)`=OWNERMGT,`EO Collected`=CollectedYesNo,`Spp Collected`=SppYesNo)][FiltersOccPrior()][order(SNAME)]
       datlim <- EOdata[][FiltersOccPrior()]
-      sppdat <- datlim[,.(CRPR=RPLANTRANK[1],FEDLIST=FEDLIST[1],evolDist=round(evolDist[1]),`Collected Anywhere`=SppYesNo[1],`Collections in Filter`=sum(1*CollectedYN==1)),by=SNAME][order(SNAME)]
+      sppdat <- datlim[,.(CRPR=RPLANTRANK[1],FEDLIST=FEDLIST[1],evolDist=round(evolDist[1]),`Collected Anywhere`=SppYesNo[1],`Collections in Filter`=sum(1*CollectedYN==1), milesAway=NA),by=SNAME][order(SNAME)]
     }else{
       loc <- geocode(input$yourLocation)
       datlim <- EOdata[][FiltersOccPrior()]
@@ -249,6 +249,39 @@ filterFunc <- function(InPuT,Data,column){
                                                      matrix(c(loc[[1]], loc[[2]]), ncol = 2))/6000,1),na.rm=T)),by=SNAME]
       sppdat <- sppdat[milesAway <= as.numeric(input$milesFrom)][order(milesAway)]
     }
+    
+    # Prioritity Ranks
+    sppdat[CRPR%in%c("1B.1","1A"),RareScore:=100]
+    sppdat[CRPR=="1B.2",RareScore:=95]
+    sppdat[CRPR=="1B.3",RareScore:=90]
+    sppdat[CRPR%in%c("2A","2B.1"),RareScore:=75]
+    sppdat[CRPR%in%c("2B.2"),RareScore:=65]
+    sppdat[CRPR%in%c("2B.3"),RareScore:=60]
+    sppdat[CRPR%in%c("3","3.1"),RareScore:=50]
+    sppdat[CRPR%in%c("3.2"),RareScore:=45]
+    sppdat[CRPR%in%c("3.3"),RareScore:=40]
+    sppdat[CRPR%in%c("4.1"),RareScore:=25]
+    sppdat[CRPR%in%c("4.2"),RareScore:=20]
+    sppdat[CRPR%in%c("4.3"),RareScore:=15]
+    sppdat[is.na(RareScore),RareScore:=0]
+    sppdat[,RareScore:=RareScore/100]
+
+    # Collection Status
+    sppdat[,CollectScore:=ifelse(`Collected Anywhere`=="Yes",0,0.5)]
+
+    # Nearness
+    sppdat[,DistScore:=ifelse(is.na(milesAway),0,1-milesAway/max(milesAway,na.rm=T))]
+
+    # Evolutionary Dist
+    sppdat[is.na(evolDist)|evolDist=="",evolDist:=1]
+    sppdat[,EvolScore:=evolDist/max(evolDist,na.rm=T)]
+
+    # TotalScoe
+    sppdat[,RawScore:=RareScore+DistScore+EvolScore+CollectScore]
+    sppdat[,AdjScore:=RareScore*(5-input$rarityRank)+EvolScore*(5-input$evoRank)+CollectScore*(5-input$collectionRank)+DistScore*(5-input$locationRank)]
+    #a = input$rarityRank
+    sppdat=sppdat[,.(SNAME,CRPR,evolDist,`Collected Anywhere`,milesAway,RawScore,AdjScore)][order(-RawScore,milesAway,SNAME)]
+
     return(sppdat)
   })
   

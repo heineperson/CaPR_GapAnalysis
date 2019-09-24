@@ -147,51 +147,30 @@ caprSppTable[SppRank=="PrettyGood"]
 # Looking at discrepancies between EO data and CaPR data
 caprSppTable[grepl("1B",CRPR_simple) & topCollectionTypes%in%c("01-Maternal Lines And Wild","02-Seed Bulked","03-Seed Data Deficient") & !(ELMCODE%in%EOdata$ELMCODE[which(EOdata$SppCollAnywhereYN==1)]),.(name_minus_authors,topCollectionTypes)]
 
-# # Making a second table that can be used for venn diagram
-# caprSppTable2 <- capr[,  .(
-#   collectionTypes=toString(sort(unique(conservationClassification[grepl("Seed",conservationClassification)|grepl("Maternal",conservationClassification)]))),
-#   countTierOne = uniqueN(cnddbEOIndex[conservationClassification=="MaternalLines And Wild"]),
-#   countTierFour = uniqueN(eventID[conservationClassification=="Living: Wild Prov"]),
-#   seedCollections=sum(1*(grepl("Seed",basisofRecord))),
-#   matLinesSeedCollections = sum(1*preparations%in%c("maternalLines","conservation quality")),
-#   aggregateSeedCount=sum((as.numeric(organismQuantity)),na.rm=T),
-#   aggregateMaternalLineCount = sum((as.numeric(maternalLines)),na.rm=T),
-#   ecoRegionsCollected = toString(unique(JEP_REG[!is.na(JEP_REG)]))
-# ), by=c("taxonID")]
-# 
-# caprSppTable2[collectionTypes=="",collectionTypes:="Uncollected"]
-# 
-# # Merge Table with speices
-# caprSppTable2 <- merge(caprSppTable2, Spp[,.(JepID, name_minus_authors, common)], by.x='taxonID',by.y='JepID', all=T)
-# caprSppTable2[is.na(collectionTypes),collectionTypes:="Uncollected"]
-# 
-# 
-# # Merging cnddb table and capr Table
-# caprSppTable2 <- merge(caprSppTable2,cnddb_summ,by.x="taxonID",by.y="JepID",all.x=T)
-# caprSppTable2 <- merge(caprSppTable2,cnps[,.(CRPR, JepID)],by.x="taxonID",by.y="JepID",all.x=T)
-# 
-# 
 
-  
-#   VenDat <- caprSppTable[,.(Count=.N),by="collectionTypesSeed"]
-#   VenDat[,collectionTypesSeed:=gsub(", ","&",collectionTypesSeed,fixed=T)] 
-#   VenVec <- VenDat$Count
-#   names(VenVec) <- VenDat$collectionTypes
-# # #
-#   plot(euler(VenVec))
-#
+########## PRIORITY RANKS #####################
+## Making up scores for the prioritization analysis
 
-# caprSppTable[grepl("Quercus",name_minus_authors),.(name_minus_authors,CRPR)]
-# caprSppTable[grepl("Quercus",name_minus_authors) & !grepl("var.",name_minus_authors) & !grepl(" x ",name_minus_authors) ,.(name_minus_authors,CRPR)]
-# 
-# caprSppTable[grepl("Quercus",name_minus_authors) & !grepl("var.",name_minus_authors)  ,.(name_minus_authors,CRPR)]
-# 
-# # Playing with examples
-# 
-# famFilter <- which(grepl("Lamiaceae",as.character(MatchDataObj$data$family)))
-# #countyFilter <- which(grepl("SDG",as.character(MatchDataObj$data$Counties)))
-# instFilter <- which(grepl("SDZG",as.character(MatchDataObj$data$institutions)))
-# 
-# MatchDataObj$data[Reduce(intersect, list(famFilter,countyFilter,instFilter)),]
+# Rarity
+# caprSppTable[CRPR%in%c("1B.1","1A"),RareScore:=100]
+# caprSppTable[CRPR=="1B.2",RareScore:=95]
+# caprSppTable[CRPR=="1B.3",RareScore:=90]
+# caprSppTable[CRPR%in%c("2A","2B.1"),RareScore:=75]
+# caprSppTable[CRPR%in%c("2B.2"),RareScore:=65]
+# caprSppTable[CRPR%in%c("2B.3"),RareScore:=60]
+# caprSppTable[CRPR%in%c("3","3.1"),RareScore:=50]
+# caprSppTable[CRPR%in%c("3.2"),RareScore:=45]
+# caprSppTable[CRPR%in%c("3.3"),RareScore:=40]
+# caprSppTable[CRPR%in%c("4.1"),RareScore:=25]
+# caprSppTable[CRPR%in%c("4.2"),RareScore:=20]
+# caprSppTable[CRPR%in%c("4.3"),RareScore:=15]
+# caprSppTable[is.na(RareScore),RareScore:=0]
+
+# Distance
+
+
+
+##### NORMALIZING SCORES
+# caprSppTable[,RareScore:=RareScore/100]
 
 

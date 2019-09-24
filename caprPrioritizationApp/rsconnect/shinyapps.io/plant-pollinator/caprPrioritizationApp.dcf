@@ -5,8 +5,8 @@ account: plant-pollinator
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 1069336
-bundleId: 2338880
+bundleId: 2438243
 url: https://plant-pollinator.shinyapps.io/caprPrioritizationApp/
-when: 1566334905.22892
+when: 1569266799.20293
 asMultiple: FALSE
 asStatic: FALSE

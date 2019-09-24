@@ -29,10 +29,10 @@ tabPanel("Prioritization Tool",
              selectInput("ecoRegion", 'Enter EcoRegions You Prefer to Collect: ',choices=c("",sort(unique(capr$JEP_REG))),selected='',multiple=TRUE),
              
              h2("Value Rankings (NOT WORKING)"),
-             textInput("rarityRank","Importance of Rarity"),
-             textInput("locationRank","Importance of Nearness to Your Location"),
-             textInput("evoRank","Importance of Evolutionary Distinctness"),
-             textInput("collectionRank","Importance that Species Is Not Yet collected")
+            numericInput("rarityRank","Importance of Rarity",value=1,min=1,max=4,step=1),
+            numericInput("locationRank","Importance of Nearness to Your Location",value=1,min=1,max=4,step=1),
+            numericInput("evoRank","Importance of Evolutionary Distinctness",value=1,min=1,max=4,step=1),
+            numericInput("collectionRank","Importance that Species Is Not Yet collected",value=1,min=1,max=4,step=1)
              
            ),
            mainPanel(
